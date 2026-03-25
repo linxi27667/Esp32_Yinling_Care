@@ -144,12 +144,11 @@ bool IOT_Set_Remote_GPIO(iot_controller_t* dev, int device_index, int gpio_index
     }
     
     if (!dev->remote_devices[device_index].online) {
-        if (dev->Log_Error) {
-            dev->Log_Error(TAG, "Remote device %s is offline", dev->remote_devices[device_index].device_name);
+        if (dev->Log_Info) {
+            dev->Log_Info(TAG, "Remote device %s is offline, trying anyway...", dev->remote_devices[device_index].device_name);
         }
-        return false;
     }
-    
+
     iot_command_packet_t cmd = {
         .command = IOT_CMD_SET_GPIO,
         .device_id = dev->remote_devices[device_index].device_id,
@@ -157,17 +156,17 @@ bool IOT_Set_Remote_GPIO(iot_controller_t* dev, int device_index, int gpio_index
         .value = level,
         .reserved = {0}
     };
-    
+
     if (dev->EspNow_Send) {
-        bool result = dev->EspNow_Send(dev->remote_devices[device_index].mac_addr, 
+        bool result = dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
                                         (const uint8_t*)&cmd, sizeof(cmd));
         if (dev->Log_Info) {
-            dev->Log_Info(TAG, "Send to remote %s GPIO%d = %d, result=%d", 
+            dev->Log_Info(TAG, "Send to remote %s GPIO%d = %d, result=%d",
                           dev->remote_devices[device_index].device_name, gpio_index, level, result);
         }
         return result;
     }
-    
+
     return false;
 }
 
@@ -264,16 +263,18 @@ void IOT_Process_Remote_Response(iot_controller_t* dev, const uint8_t* mac, cons
         }
     } else if (resp->command == IOT_CMD_ANNOUNCE) {
         int gpio_count = resp->gpio_index > 0 ? resp->gpio_index : 4;
-        
+        uint8_t has_servo = resp->value & 0x01;
+
         char device_name[IOT_DEVICE_NAME_LEN];
-        snprintf(device_name, sizeof(device_name), "从机设备");
-        
+        snprintf(device_name, sizeof(device_name), "智能药盒");
+
         int new_index = IOT_Add_Remote_Device(dev, device_name, mac, gpio_count);
         if (new_index >= 0) {
             dev->remote_devices[new_index].online = true;
             if (dev->Log_Info) {
-                dev->Log_Info(TAG, "New device discovered: %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X, GPIOs: %d)",
-                              device_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], gpio_count);
+                dev->Log_Info(TAG, "New device discovered: %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X, GPIOs: %d, Servo: %s)",
+                              device_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
+                              gpio_count, has_servo ? "Yes" : "No");
             }
         }
     }
@@ -331,12 +332,11 @@ bool IOT_Set_Remote_Servo(iot_controller_t* dev, int device_index, int gpio_inde
     }
     
     if (!dev->remote_devices[device_index].online) {
-        if (dev->Log_Error) {
-            dev->Log_Error(TAG, "Remote device %s is offline", dev->remote_devices[device_index].device_name);
+        if (dev->Log_Info) {
+            dev->Log_Info(TAG, "Remote device %s is offline, trying anyway...", dev->remote_devices[device_index].device_name);
         }
-        return false;
     }
-    
+
     iot_command_packet_t cmd = {
         .command = IOT_CMD_SET_SERVO,
         .device_id = dev->remote_devices[device_index].device_id,
@@ -344,7 +344,7 @@ bool IOT_Set_Remote_Servo(iot_controller_t* dev, int device_index, int gpio_inde
         .value = angle,
         .reserved = {0}
     };
-    
+
     if (dev->EspNow_Send) {
         bool result = dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
                                         (const uint8_t*)&cmd, sizeof(cmd));
@@ -371,10 +371,9 @@ bool IOT_Open_Medicine_Box(iot_controller_t* dev, int device_index, uint8_t box_
     }
 
     if (!dev->remote_devices[device_index].online) {
-        if (dev->Log_Error) {
-            dev->Log_Error(TAG, "Remote device %s is offline", dev->remote_devices[device_index].device_name);
+        if (dev->Log_Info) {
+            dev->Log_Info(TAG, "Remote device %s is offline, trying anyway...", dev->remote_devices[device_index].device_name);
         }
-        return false;
     }
 
     iot_command_packet_t cmd = {
