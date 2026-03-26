@@ -1,6 +1,6 @@
 /**
  * @file    esp_now_receive.c
- * @brief   ESP-NOW 接收任务 (三楼设备)
+ * @brief   ESP-NOW 接收任务 (一楼设备)
  *
  * 职责：
  * - 注册 ESP-NOW 接收回调
@@ -26,7 +26,7 @@ static const char* TAG = "ESP_NOW_RECV";
 /* ================= 主机 MAC 管理 ================= */
 static uint8_t g_master_mac[6] = {0};
 static bool g_master_known = false;
-static uint8_t g_espnow_channel = ESPNOW_CHANNEL;
+static uint8_t g_espnow_channel = 0;
 
 /* ================= 协议定义（与主机保持一致） ================= */
 typedef struct {
@@ -66,6 +66,14 @@ typedef enum {
 #define TOTAL_GPIO_COUNT (LIGHT_COUNT + RELAY_COUNT + SERVO_COUNT)
 
 /* ================= 响应发送 ================= */
+static uint8_t Get_Current_Wifi_Channel(void) {
+    wifi_ap_record_t ap_info;
+    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+        return ap_info.primary;
+    }
+    return ESPNOW_CHANNEL;
+}
+
 static void Send_Response(const uint8_t* dest_mac, uint8_t cmd, uint8_t gpio_index, uint8_t value) {
     iot_command_packet_t resp = {
         .command = cmd,
@@ -74,7 +82,25 @@ static void Send_Response(const uint8_t* dest_mac, uint8_t cmd, uint8_t gpio_ind
         .value = value,
         .reserved = {0}
     };
-    esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
+
+    if (dest_mac[0] == 0xFF && dest_mac[1] == 0xFF && dest_mac[2] == 0xFF &&
+        dest_mac[3] == 0xFF && dest_mac[4] == 0xFF && dest_mac[5] == 0xFF) {
+        esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
+    } else {
+        uint8_t channel = Get_Current_Wifi_Channel();
+        esp_now_peer_info_t peer = {
+            .channel = channel,
+            .ifidx = WIFI_IF_STA,
+            .encrypt = false,
+        };
+        memcpy(peer.peer_addr, dest_mac, 6);
+        if (esp_now_is_peer_exist(dest_mac)) {
+            esp_now_mod_peer(&peer);
+        } else {
+            esp_now_add_peer(&peer);
+        }
+        esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
+    }
     ESP_LOGD(TAG, "Response sent: cmd=%d, gpio=%d, value=%d", cmd, gpio_index, value);
 }
 
@@ -86,8 +112,21 @@ static void Send_Announce(const uint8_t* dest_mac) {
         .value = 1,
         .device_name = DEVICE_NAME
     };
+
+    uint8_t channel = Get_Current_Wifi_Channel();
+    esp_now_peer_info_t peer = {
+        .channel = channel,
+        .ifidx = WIFI_IF_STA,
+        .encrypt = false,
+    };
+    memcpy(peer.peer_addr, dest_mac, 6);
+    if (esp_now_is_peer_exist(dest_mac)) {
+        esp_now_mod_peer(&peer);
+    } else {
+        esp_now_add_peer(&peer);
+    }
     esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
-    ESP_LOGI(TAG, "Announce V2 sent: %s", DEVICE_NAME);
+    ESP_LOGI(TAG, "Announce V2 sent: %s (channel %d)", DEVICE_NAME, channel);
 }
 
 /* ================= 命令处理（只更新标志位） ================= */
@@ -147,6 +186,7 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
         case IOT_CMD_DISCOVER:
             memcpy(g_master_mac, src_mac, 6);
             g_master_known = true;
+
             ESP_LOGI(TAG, "Master discovered: %02X:%02X:%02X:%02X:%02X:%02X",
                      src_mac[0], src_mac[1], src_mac[2],
                      src_mac[3], src_mac[4], src_mac[5]);
@@ -213,8 +253,17 @@ void EspNow_Receive_Init(void) {
 
     ESP_ERROR_CHECK(esp_now_init());
 
+    wifi_ap_record_t ap_info;
+    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+        g_espnow_channel = ap_info.primary;
+        ESP_LOGI(TAG, "WiFi connected, ESP-NOW will use channel %d", g_espnow_channel);
+    } else {
+        g_espnow_channel = ESPNOW_CHANNEL;
+        ESP_LOGW(TAG, "WiFi not connected yet, using default channel %d", g_espnow_channel);
+    }
+
     esp_now_register_recv_cb(EspNow_Recv_Callback);
     esp_now_register_send_cb(EspNow_Send_Callback);
 
-    ESP_LOGI(TAG, "ESP-NOW initialized on channel %d", ESPNOW_CHANNEL);
+    ESP_LOGI(TAG, "ESP-NOW initialized");
 }

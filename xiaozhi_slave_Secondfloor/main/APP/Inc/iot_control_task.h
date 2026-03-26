@@ -1,6 +1,6 @@
 /**
  * @file    iot_control_task.h
- * @brief   二楼设备控制任务 (Flag-driven + Enum 架构)
+ * @brief   一楼设备控制任务 (Flag-driven + Enum 架构)
  *
  * 职责：
  * - 维护设备标志位（枚举类型）
@@ -30,9 +30,9 @@ typedef enum {
 
 typedef enum {
     SERVO_0   = 0,
-    SERVO_45  = 45,
-    SERVO_90  = 90,
-    SERVO_135 = 135
+    SERVO_45  = 1,
+    SERVO_90  = 2,
+    SERVO_135 = 3
 } servo_angle_enum_t;
 
 /* ================= 设备标志位结构体 ================= */

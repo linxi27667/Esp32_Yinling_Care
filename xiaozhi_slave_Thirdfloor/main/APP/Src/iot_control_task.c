@@ -1,6 +1,6 @@
 /**
  * @file    iot_control_task.c
- * @brief   三楼设备控制任务 (Flag-driven + Enum 架构)
+ * @brief   一楼设备控制任务 (Flag-driven + Enum 架构)
  *
  * 职责：
  * - 维护设备标志位（枚举类型）
@@ -88,8 +88,6 @@ static void HW_Servo_Set_Angle(gpio_num_t gpio, int16_t angle) {
 
     ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, duty);
     ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
-
-    ESP_LOGI(TAG, "Servo GPIO%d: %d deg", gpio, angle);
 }
 
 /* ================= 2. GPIO 硬件定义 (人工可改) ================= */

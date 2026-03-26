@@ -4,6 +4,96 @@
 
 ---
 
+## 2026-03-26 20:30（第八次会话）
+
+### 主题：二楼/三楼/药盒设备 V2 协议升级 + 继电器控制修复
+
+### 问题背景
+
+一楼设备已完成 V2 协议升级，但二楼、三楼和药盒设备仍使用旧代码，导致：
+- 二楼/三楼：Peer exists 警告 + 无法正常响应主机
+- 药盒：使用 V1 协议，主机显示"未知设备"
+
+---
+
+### 修复内容
+
+#### 1. 主机 IOT_Set_Relay gpio_index 计算错误（严重！）
+
+**问题**：`IOT_Set_Relay()` 直接用 `relay_index` 作为 `gpio_index`，导致继电器被当成灯处理。
+
+**修复文件**：`main/bsp/src/bsp_iot_controller.c`
+
+```c
+// 修复前（错误）
+int gpio_index = relay_index;  // relay_index=0 → gpio_index=0（灯）
+
+// 修复后（正确）
+int gpio_index = 3 + relay_index;  // relay_index=0 → gpio_index=3（继电器1）
+```
+
+#### 2. 主机 IOT_Set_Servo gpio_index 计算错误
+
+```c
+// 修复后
+int gpio_index = 6 + servo_index;  // servo_index=0 → gpio_index=6（舵机1）
+```
+
+#### 3. 二楼/三楼设备 esp_now_receive.c 升级
+
+将一楼设备的完整 V2 协议代码应用到二楼和三楼：
+
+**修复内容**：
+- 添加 `Get_Current_Wifi_Channel()` 动态获取信道
+- `Send_Response()` 添加 peer 检查（`esp_now_is_peer_exist` → `esp_now_mod_peer/add_peer`）
+- `Send_Announce()` 发送 V2 协议包（包含设备名称）
+- `EspNow_Receive_Init()` 获取 WiFi 信道
+
+**设备名称**：
+- 二楼：`#define DEVICE_NAME "二楼设备"`
+- 三楼：`#define DEVICE_NAME "三楼设备"`
+
+#### 4. 智能药盒添加 V2 协议支持（保留原有功能）
+
+**修复文件**：`xiaozhi_slave_yaohe/main/APP/Src/esp_now_receive.c`
+
+**关键修改**：
+1. 添加 `iot_announce_v2_packet_t` 结构体和 `IOT_CMD_ANNOUNCE_V2 = 0x08` 命令
+2. 添加 `Send_Announce_V1()` 和 `Send_Announce_V2()` 两个函数
+3. `IOT_CMD_DISCOVER` 处理中调用 `Send_Announce_V2()`
+4. 保留所有原有命令：`IOT_CMD_OPEN_MEDICINE_BOX`、`IOT_CMD_SET_SERVO` 等
+5. 添加 peer 存在性检查（`esp_now_is_peer_exist` → `esp_now_mod_peer/add_peer`）
+
+**设备名称**：`#define DEVICE_NAME "智能药盒"`
+
+---
+
+### 修复后验证
+
+#### 编译后检查日志
+
+**一楼/二楼/三楼设备**应显示：
+```
+ESP_NOW_RECV: WiFi connected, ESP-NOW will use channel X
+ESP_NOW_RECV: Announce V2 sent: 一楼设备 (channel X)
+ESP_NOW_RECV: Command: cmd=1, gpio=3, value=1  ← 继电器控制
+```
+
+**智能药盒**应显示：
+```
+ESP_NOW_RECV: Announce V2 sent: 智能药盒 (channel X)
+```
+
+#### 主机端验证
+
+主机应能识别所有四个设备：
+- 一楼设备
+- 二楼设备
+- 三楼设备
+- 智能药盒
+
+---
+
 ## 2026-03-26 19:30（第七次会话）
 
 ### 主题：ESP-NOW 信道不匹配问题修复 + 从机无法通信根因定位
