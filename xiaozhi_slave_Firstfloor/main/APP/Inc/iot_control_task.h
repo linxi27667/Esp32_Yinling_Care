@@ -35,6 +35,19 @@ typedef enum {
     SERVO_135 = 3
 } servo_angle_enum_t;
 
+/* ================= 中文设备名称绑定（用于小智意图识别） ================= */
+#define LIGHT_1_CHINESE   "浴室灯"
+#define LIGHT_2_CHINESE   "客厅灯"
+#define LIGHT_3_CHINESE   "卧室灯"
+
+#define RELAY_1_CHINESE   "电视电源"
+#define RELAY_2_CHINESE   "空调电源"
+#define RELAY_3_CHINESE   "热水器电源"
+
+#define SERVO_1_CHINESE   "窗户"
+#define SERVO_2_CHINESE   "窗帘"
+#define SERVO_3_CHINESE   "门锁"
+
 /* ================= 设备标志位结构体 ================= */
 typedef struct {
     device_onoff_enum_t light[LIGHT_COUNT];

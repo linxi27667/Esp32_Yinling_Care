@@ -4,6 +4,60 @@
 
 ---
 
+## 2026-03-26 21:00（第九次会话）
+
+### 主题：中文设备名称绑定 + 意图识别问题分析
+
+### 完成内容
+
+#### 1. 中文设备名称绑定（用于小智意图识别）
+
+**修改文件**：
+- `xiaozhi_slave_Firstfloor/main/APP/Inc/iot_control_task.h`
+- `xiaozhi_slave_Secondfloor/main/APP/Inc/iot_control_task.h`
+- `xiaozhi_slave_Thirdfloor/main/APP/Inc/iot_control_task.h`
+
+**一楼设备中文名称**：
+```c
+#define LIGHT_1_CHINESE   "浴室灯"
+#define LIGHT_2_CHINESE   "客厅灯"
+#define LIGHT_3_CHINESE   "卧室灯"
+
+#define RELAY_1_CHINESE   "电视电源"
+#define RELAY_2_CHINESE   "空调电源"
+#define RELAY_3_CHINESE   "热水器电源"
+
+#define SERVO_1_CHINESE   "窗户"
+#define SERVO_2_CHINESE   "窗帘"
+#define SERVO_3_CHINESE   "门锁"
+```
+
+**二楼/三楼**：类似定义，添加 `二楼`/`三楼` 前缀。
+
+---
+
+#### 2. 意图识别问题（待解决）
+
+**问题**："关闭所有灯" 会触发 "关闭所有设备"（包括继电器和舵机）
+
+**原因**：小智的意图识别配置问题，需要在小智的意图配置文件中区分：
+- `"关灯"` → 只关灯
+- `"关闭所有"` / `"全关"` → 关闭所有设备
+
+**待办**：需要用户提供小智意图配置文件位置进行修改。
+
+---
+
+#### 3. AudioCodec 卡死问题（暂不影响演示）
+
+**日志**：`I (95489) AudioCodec: Set output enable to false`
+
+**分析**：这是音频电源管理逻辑，当音频输出超过 `AUDIO_POWER_TIMEOUT_MS` 无活动时自动关闭输出。
+
+**状态**：暂不影响演示，待后续排查。
+
+---
+
 ## 2026-03-26 20:30（第八次会话）
 
 ### 主题：二楼/三楼/药盒设备 V2 协议升级 + 继电器控制修复
