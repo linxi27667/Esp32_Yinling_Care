@@ -382,6 +382,42 @@ bool IOT_Broadcast_All_On(iot_controller_t* dev) {
     return false;
 }
 
+bool IOT_Broadcast_Lights_Off(iot_controller_t* dev) {
+    if (dev == NULL) return false;
+
+    iot_command_packet_t cmd = {
+        .command = IOT_CMD_BROADCAST_LIGHTS_OFF,
+        .device_id = 0,
+        .gpio_index = 0,
+        .value = 0,
+        .reserved = {0}
+    };
+
+    if (dev->EspNow_Send) {
+        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    }
+    return false;
+}
+
+bool IOT_Broadcast_Lights_On(iot_controller_t* dev) {
+    if (dev == NULL) return false;
+
+    iot_command_packet_t cmd = {
+        .command = IOT_CMD_BROADCAST_LIGHTS_ON,
+        .device_id = 0,
+        .gpio_index = 0,
+        .value = 0,
+        .reserved = {0}
+    };
+
+    if (dev->EspNow_Send) {
+        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    }
+    return false;
+}
+
 void IOT_Check_Device_Timeout(iot_controller_t* dev, uint32_t timeout_ms) {
     if (dev == NULL) return;
 

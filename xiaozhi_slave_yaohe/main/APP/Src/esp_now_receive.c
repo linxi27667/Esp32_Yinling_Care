@@ -59,7 +59,9 @@ typedef enum {
     IOT_CMD_SET_SERVO = 0x10,
     IOT_CMD_OPEN_MEDICINE_BOX = 0x20,
     IOT_CMD_BROADCAST_ALL_OFF = 0x30,
-    IOT_CMD_BROADCAST_ALL_ON = 0x31
+    IOT_CMD_BROADCAST_ALL_ON = 0x31,
+    IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32,
+    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33
 } iot_command_t;
 
 /* ================= 设备名称定义 ================= */
@@ -218,6 +220,16 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
             g_device_flags.light_state = LIGHT_ON;
             g_device_flags.box_state = MED_BOX_1;
             ESP_LOGI(TAG, "All devices ON (home mode)");
+            break;
+
+        case IOT_CMD_BROADCAST_LIGHTS_OFF:
+            g_device_flags.light_state = LIGHT_OFF;
+            ESP_LOGI(TAG, "All lights OFF");
+            break;
+
+        case IOT_CMD_BROADCAST_LIGHTS_ON:
+            g_device_flags.light_state = LIGHT_ON;
+            ESP_LOGI(TAG, "All lights ON");
             break;
 
         default:

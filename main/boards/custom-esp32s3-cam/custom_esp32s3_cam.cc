@@ -639,6 +639,36 @@ public:
                 return json;
             });
 
+        mcp_server.AddTool("self.iot.all_lights_off",
+            "关闭所有灯。\n"
+            "广播命令到所有设备，只关闭所有灯（不影响继电器和舵机）。\n"
+            "用于用户说\"关灯\"、\"关闭所有灯\"时。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = App_IOT_Broadcast_Lights_Off();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ? "所有灯已关闭" : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.all_lights_on",
+            "打开所有灯。\n"
+            "广播命令到所有设备，只打开所有灯（不影响继电器和舵机）。\n"
+            "用于用户说\"开灯\"、\"打开所有灯\"时。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = App_IOT_Broadcast_Lights_On();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ? "所有灯已打开" : "操作失败");
+
+                return json;
+            });
+
         mcp_server.AddTool("self.medicine.add",
             "添加一种药物到药物管理系统。\n"
             "当用户想要添加新的药物提醒或记录药物信息时使用此工具。\n"

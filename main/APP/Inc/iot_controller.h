@@ -24,6 +24,8 @@ bool App_IOT_Set_Relay(const char* device_name, uint8_t relay_index, bool on);
 bool App_IOT_Set_Servo_ByIndex(const char* device_name, uint8_t servo_index, uint8_t angle);
 bool App_IOT_Broadcast_All_Off(void);
 bool App_IOT_Broadcast_All_On(void);
+bool App_IOT_Broadcast_Lights_Off(void);
+bool App_IOT_Broadcast_Lights_On(void);
 void App_IOT_Get_All_Status(char* buffer, int buffer_size);
 
 #ifdef __cplusplus

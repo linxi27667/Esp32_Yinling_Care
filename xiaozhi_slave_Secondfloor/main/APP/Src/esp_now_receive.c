@@ -58,7 +58,9 @@ typedef enum {
     IOT_CMD_SET_LIGHT = 0x11,
     IOT_CMD_SET_RELAY = 0x12,
     IOT_CMD_BROADCAST_ALL_OFF = 0x30,
-    IOT_CMD_BROADCAST_ALL_ON = 0x31
+    IOT_CMD_BROADCAST_ALL_ON = 0x31,
+    IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32,
+    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33
 } iot_command_t;
 
 /* ================= 设备名称定义 ================= */
@@ -205,6 +207,16 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
             for (int i = 0; i < RELAY_COUNT; i++) g_device_flags.relay[i] = ON;
             for (int i = 0; i < SERVO_COUNT; i++) g_device_flags.servo[i] = SERVO_90;
             ESP_LOGI(TAG, "All devices ON");
+            break;
+
+        case IOT_CMD_BROADCAST_LIGHTS_OFF:
+            for (int i = 0; i < LIGHT_COUNT; i++) g_device_flags.light[i] = OFF;
+            ESP_LOGI(TAG, "All lights OFF");
+            break;
+
+        case IOT_CMD_BROADCAST_LIGHTS_ON:
+            for (int i = 0; i < LIGHT_COUNT; i++) g_device_flags.light[i] = ON;
+            ESP_LOGI(TAG, "All lights ON");
             break;
 
         default:

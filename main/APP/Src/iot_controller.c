@@ -336,6 +336,14 @@ bool App_IOT_Broadcast_All_On(void) {
     return IOT_Broadcast_All_On(&g_iot_controller);
 }
 
+bool App_IOT_Broadcast_Lights_Off(void) {
+    return IOT_Broadcast_Lights_Off(&g_iot_controller);
+}
+
+bool App_IOT_Broadcast_Lights_On(void) {
+    return IOT_Broadcast_Lights_On(&g_iot_controller);
+}
+
 void App_IOT_Get_All_Status(char* buffer, int buffer_size) {
     if (buffer == NULL || buffer_size <= 0) return;
     

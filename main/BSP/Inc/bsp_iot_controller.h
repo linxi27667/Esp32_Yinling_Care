@@ -89,7 +89,9 @@ typedef enum {
     IOT_CMD_SET_RELAY = 0x12,
     IOT_CMD_OPEN_MEDICINE_BOX = 0x20,
     IOT_CMD_BROADCAST_ALL_OFF = 0x30,
-    IOT_CMD_BROADCAST_ALL_ON = 0x31
+    IOT_CMD_BROADCAST_ALL_ON = 0x31,
+    IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32,
+    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33
 } iot_command_t;
 
 void IOT_Controller_Init(iot_controller_t* dev);
@@ -113,5 +115,7 @@ bool IOT_Set_Relay(iot_controller_t* dev, int device_index, uint8_t relay_index,
 bool IOT_Set_Servo(iot_controller_t* dev, int device_index, uint8_t servo_index, uint8_t angle);
 bool IOT_Broadcast_All_Off(iot_controller_t* dev);
 bool IOT_Broadcast_All_On(iot_controller_t* dev);
+bool IOT_Broadcast_Lights_Off(iot_controller_t* dev);
+bool IOT_Broadcast_Lights_On(iot_controller_t* dev);
 
 #endif

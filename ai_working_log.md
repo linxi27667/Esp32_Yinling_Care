@@ -10,7 +10,44 @@
 
 ### 完成内容
 
-#### 1. 中文设备名称绑定（用于小智意图识别）
+#### 1. 新增 MCP 工具：all_lights_on / all_lights_off
+
+**问题**：用户说"打开所有灯"时，小智错误调用 `all_on`（打开所有设备），应该只打开灯。
+
+**解决方案**：添加专门控制灯的 MCP 工具。
+
+**新增 ESP-NOW 命令**：
+```c
+IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32  // 只关灯
+IOT_CMD_BROADCAST_LIGHTS_ON  = 0x33  // 只开灯
+```
+
+**修改文件汇总**：
+
+| 层级 | 文件 | 修改 |
+|------|------|------|
+| 协议层 | `main/BSP/Inc/bsp_iot_controller.h` | 添加命令枚举 |
+| BSP 层 | `main/BSP/Src/bsp_iot_controller.c` | 添加 `IOT_Broadcast_Lights_On/Off()` |
+| APP 层 | `main/APP/Inc/iot_controller.h` | 添加函数声明 |
+| APP 层 | `main/APP/Src/iot_controller.c` | 添加 `App_IOT_Broadcast_Lights_On/Off()` |
+| MCP 层 | `main/boards/custom-esp32s3-cam/custom_esp32s3_cam.cc` | 添加 `self.iot.all_lights_on/off` |
+| 从机 | `xiaozhi_slave_Firstfloor/.../esp_now_receive.c` | 添加命令处理 |
+| 从机 | `xiaozhi_slave_Secondfloor/.../esp_now_receive.c` | 添加命令处理 |
+| 从机 | `xiaozhi_slave_Thirdfloor/.../esp_now_receive.c` | 添加命令处理 |
+| 从机 | `xiaozhi_slave_yaohe/.../esp_now_receive.c` | 添加命令处理 |
+
+**MCP 工具说明**：
+
+| 工具 | 触发场景 | 功能 |
+|------|---------|------|
+| `self.iot.all_lights_on` | "开灯"、"打开所有灯" | 只开灯，不影响继电器/舵机 |
+| `self.iot.all_lights_off` | "关灯"、"关闭所有灯" | 只关灯，不影响继电器/舵机 |
+| `self.iot.all_on` | "打开所有设备" | 开灯+继电器+舵机 |
+| `self.iot.all_off` | "关闭所有设备" | 关灯+继电器+舵机 |
+
+---
+
+#### 2. 中文设备名称绑定（用于小智意图识别）
 
 **修改文件**：
 - `xiaozhi_slave_Firstfloor/main/APP/Inc/iot_control_task.h`
