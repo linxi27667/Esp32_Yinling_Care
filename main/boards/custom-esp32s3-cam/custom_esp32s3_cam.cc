@@ -524,6 +524,121 @@ public:
                 return json;
             });
 
+        mcp_server.AddTool("self.iot.set_light",
+            "控制指定设备的灯光。\n"
+            "Args:\n"
+            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
+            "  index: 灯编号 (0-2)\n"
+            "  value: true=开, false=关",
+            PropertyList({
+                Property("device", kPropertyTypeString),
+                Property("index", kPropertyTypeInteger),
+                Property("value", kPropertyTypeBoolean)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                auto device = properties["device"].value<std::string>();
+                int index = properties["index"].value<int>();
+                bool value = properties["value"].value<bool>();
+
+                bool success = App_IOT_Set_Light(device.c_str(), (uint8_t)index, value);
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "device", device.c_str());
+                cJSON_AddNumberToObject(json, "light", index);
+                cJSON_AddBoolToObject(json, "value", value);
+                cJSON_AddStringToObject(json, "message", success ?
+                    (value ? "灯已打开" : "灯已关闭") : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.set_relay",
+            "控制指定设备的继电器。\n"
+            "Args:\n"
+            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
+            "  index: 继电器编号 (0-2)\n"
+            "  value: true=开, false=关",
+            PropertyList({
+                Property("device", kPropertyTypeString),
+                Property("index", kPropertyTypeInteger),
+                Property("value", kPropertyTypeBoolean)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                auto device = properties["device"].value<std::string>();
+                int index = properties["index"].value<int>();
+                bool value = properties["value"].value<bool>();
+
+                bool success = App_IOT_Set_Relay(device.c_str(), (uint8_t)index, value);
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "device", device.c_str());
+                cJSON_AddNumberToObject(json, "relay", index);
+                cJSON_AddBoolToObject(json, "value", value);
+                cJSON_AddStringToObject(json, "message", success ?
+                    (value ? "继电器已打开" : "继电器已关闭") : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.set_servo_by_index",
+            "控制指定设备的舵机角度。\n"
+            "Args:\n"
+            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
+            "  index: 舵机编号 (0-2)\n"
+            "  angle: 角度 (0/45/90/135)",
+            PropertyList({
+                Property("device", kPropertyTypeString),
+                Property("index", kPropertyTypeInteger),
+                Property("angle", kPropertyTypeInteger)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                auto device = properties["device"].value<std::string>();
+                int index = properties["index"].value<int>();
+                int angle = properties["angle"].value<int>();
+
+                bool success = App_IOT_Set_Servo_ByIndex(device.c_str(), (uint8_t)index, (uint8_t)angle);
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "device", device.c_str());
+                cJSON_AddNumberToObject(json, "servo", index);
+                cJSON_AddNumberToObject(json, "angle", angle);
+                cJSON_AddStringToObject(json, "message", success ? "舵机已设置" : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.all_off",
+            "关闭所有设备（灯、继电器、舵机）。\n"
+            "广播命令到所有设备，同时关闭所有负载。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = App_IOT_Broadcast_All_Off();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ? "所有设备已关闭" : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.all_on",
+            "打开所有设备（灯、继电器）。\n"
+            "广播命令到所有设备，同时打开所有负载。\n"
+            "注意：舵机不会被设置，保持当前位置。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = App_IOT_Broadcast_All_On();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ? "所有设备已打开" : "操作失败");
+
+                return json;
+            });
+
         mcp_server.AddTool("self.medicine.add",
             "添加一种药物到药物管理系统。\n"
             "当用户想要添加新的药物提醒或记录药物信息时使用此工具。\n"

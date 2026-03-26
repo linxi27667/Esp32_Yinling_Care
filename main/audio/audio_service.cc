@@ -660,9 +660,12 @@ bool AudioService::IsIdle() {
 
 void AudioService::WaitForPlaybackQueueEmpty() {
     std::unique_lock<std::mutex> lock(audio_queue_mutex_);
-    audio_queue_cv_.wait(lock, [this]() { 
-        return service_stopped_ || (audio_decode_queue_.empty() && audio_playback_queue_.empty()); 
+    bool result = audio_queue_cv_.wait_for(lock, std::chrono::milliseconds(2000), [this]() {
+        return service_stopped_ || (audio_decode_queue_.empty() && audio_playback_queue_.empty());
     });
+    if (!result) {
+        ESP_LOGW(TAG, "Timeout waiting for playback queue to empty, proceeding anyway");
+    }
 }
 
 void AudioService::ResetDecoder() {

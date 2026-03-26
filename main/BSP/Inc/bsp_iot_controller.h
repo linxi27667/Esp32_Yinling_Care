@@ -67,6 +67,14 @@ typedef struct {
     uint8_t reserved[4];
 } iot_command_packet_t;
 
+typedef struct {
+    uint8_t command;
+    uint8_t device_id;
+    uint8_t gpio_index;
+    uint8_t value;
+    char device_name[24];
+} iot_announce_v2_packet_t;
+
 typedef enum {
     IOT_CMD_SET_GPIO = 0x01,
     IOT_CMD_GET_GPIO = 0x02,
@@ -75,8 +83,13 @@ typedef enum {
     IOT_CMD_RESPONSE = 0x05,
     IOT_CMD_DISCOVER = 0x06,
     IOT_CMD_ANNOUNCE = 0x07,
+    IOT_CMD_ANNOUNCE_V2 = 0x08,
     IOT_CMD_SET_SERVO = 0x10,
-    IOT_CMD_OPEN_MEDICINE_BOX = 0x20
+    IOT_CMD_SET_LIGHT = 0x11,
+    IOT_CMD_SET_RELAY = 0x12,
+    IOT_CMD_OPEN_MEDICINE_BOX = 0x20,
+    IOT_CMD_BROADCAST_ALL_OFF = 0x30,
+    IOT_CMD_BROADCAST_ALL_ON = 0x31
 } iot_command_t;
 
 void IOT_Controller_Init(iot_controller_t* dev);
@@ -95,5 +108,10 @@ bool IOT_Set_Remote_Servo(iot_controller_t* dev, int device_index, int gpio_inde
 bool IOT_Open_Medicine_Box(iot_controller_t* dev, int device_index, uint8_t box_index);
 void IOT_Update_Heartbeat(iot_controller_t* dev, const uint8_t* mac);
 void IOT_Check_Device_Timeout(iot_controller_t* dev, uint32_t timeout_ms);
+bool IOT_Set_Light(iot_controller_t* dev, int device_index, uint8_t light_index, uint8_t on);
+bool IOT_Set_Relay(iot_controller_t* dev, int device_index, uint8_t relay_index, uint8_t on);
+bool IOT_Set_Servo(iot_controller_t* dev, int device_index, uint8_t servo_index, uint8_t angle);
+bool IOT_Broadcast_All_Off(iot_controller_t* dev);
+bool IOT_Broadcast_All_On(iot_controller_t* dev);
 
 #endif

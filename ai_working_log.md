@@ -4,6 +4,334 @@
 
 ---
 
+## 2026-03-26 19:30（第七次会话）
+
+### 主题：ESP-NOW 信道不匹配问题修复 + 从机无法通信根因定位
+
+### 问题1：ESP-NOW 信道不匹配（严重！）
+
+**日志证据**：
+```
+主机日志: ESP-NOW initialized (channel 8)
+从机日志: ESP-NOW initialized on channel 1  ← 信道不匹配！
+```
+
+**根本原因**：
+- 主机 ESP-NOW 跟随 WiFi 信道（channel 8）
+- 从机硬编码 `#define ESPNOW_CHANNEL 1`
+- **信道不匹配 = 从机根本收不到主机的任何命令！**
+
+### 问题2：从机未添加 peer
+
+从机发送 ANNOUNCE_V2 响应给主机前，没有调用 `esp_now_add_peer()`，导致发送失败。
+
+---
+
+### 修复方案
+
+#### 1. 从机 ESP-NOW 初始化时获取当前 WiFi 信道
+
+**修改文件**：`xiaozhi_slave_Firstfloor/main/APP/Src/esp_now_receive.c`
+
+```c
+// 修复前
+#define ESPNOW_CHANNEL  1
+static uint8_t g_espnow_channel = ESPNOW_CHANNEL;
+
+// 修复后
+static uint8_t g_espnow_channel = 0;
+
+// 初始化时获取实际信道
+wifi_ap_record_t ap_info;
+if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+    g_espnow_channel = ap_info.primary;
+}
+```
+
+#### 2. 添加 Get_Current_Wifi_Channel() 辅助函数
+
+```c
+static uint8_t Get_Current_Wifi_Channel(void) {
+    wifi_ap_record_t ap_info;
+    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+        return ap_info.primary;
+    }
+    return ESPNOW_CHANNEL;
+}
+```
+
+#### 3. 发送响应前添加 peer
+
+```c
+static void Send_Announce(const uint8_t* dest_mac) {
+    // ... 构造响应包 ...
+
+    uint8_t channel = Get_Current_Wifi_Channel();
+    esp_now_peer_info_t peer = {
+        .channel = channel,
+        .ifidx = WIFI_IF_STA,
+        .encrypt = false,
+    };
+    memcpy(peer.peer_addr, dest_mac, 6);
+    esp_now_add_peer(&peer);
+    esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
+}
+```
+
+---
+
+### 本次修改文件汇总
+
+| 文件 | 修改内容 |
+|------|----------|
+| `xiaozhi_slave_Firstfloor/main/APP/Src/esp_now_receive.c` | 1. 信道跟随 WiFi 2. 添加 Get_Current_Wifi_Channel() 3. 发送前添加 peer |
+
+### 待验证
+
+重新烧录从机后，检查日志是否显示：
+```
+ESP_NOW_RECV: WiFi connected, ESP-NOW will use channel X
+ESP_NOW_RECV: Announce V2 sent: 一楼设备 (channel X)
+```
+
+---
+
+## 2026-03-26 18:30（第六次会话）
+
+### 主题：从机编译成功 + 设备名协议验证 + 工作日志整理
+
+### 问题1：编译错误 - 枚举数组索引越界
+
+**错误信息**：
+```
+error: array index in initializer exceeds array bounds
+    [SERVO_45]  = SERVO_ANGLE_45,
+```
+
+**根本原因**：
+枚举定义使用了角度值作为枚举值：
+```c
+typedef enum {
+    SERVO_0   = 0,
+    SERVO_45  = 45,   // 错误！数组大小只有4，最大索引为3
+    SERVO_90  = 90,
+    SERVO_135 = 135
+} servo_angle_enum_t;
+```
+
+**修复方案**：
+改为索引值：
+```c
+typedef enum {
+    SERVO_0   = 0,
+    SERVO_45  = 1,
+    SERVO_90  = 2,
+    SERVO_135 = 3
+} servo_angle_enum_t;
+```
+
+**修改文件**：
+- `xiaozhi_slave_Firstfloor/main/APP/Inc/iot_control_task.h`
+
+---
+
+### 问题2：从机日志疯狂打印
+
+**原因**：`Device_Refresh_Task` 每 100ms 打印一次舵机角度
+
+**修复方案**：
+移除 `HW_Servo_Set_Angle` 函数中的调试日志
+
+**修改文件**：
+- `xiaozhi_slave_Firstfloor/main/APP/Src/iot_control_task.c`
+
+```c
+// 移除的代码
+ESP_LOGI(TAG, "Servo GPIO%d: %d deg", gpio, angle);
+```
+
+---
+
+### 问题3：从机发送 V2 协议但主机显示"未知设备"
+
+**验证结果**：
+- ✅ 从机日志确认：`Announce V2 sent: 一楼设备`
+- ❌ 主机日志显示：`叫" 未知设备"`
+
+**结论**：
+- 从机代码正确，使用 `IOT_CMD_ANNOUNCE_V2` 协议
+- 主机代码需要重新编译以处理 V2 协议的设备名更新
+
+**解决方案**：
+重新编译并烧录主机（`xiaozhi-esp32-main`）
+
+---
+
+### 本次修改文件汇总
+
+#### 从机 firstfloor
+| 文件 | 修改内容 |
+|------|----------|
+| `xiaozhi_slave_Firstfloor/main/APP/Inc/iot_control_task.h` | 修复枚举值：45→1, 90→2, 135→3 |
+| `xiaozhi_slave_Firstfloor/main/APP/Src/iot_control_task.c` | 移除舵机调试日志 |
+
+#### 主机 BSP 层（第五次会话遗留）
+| 文件 | 修改内容 |
+|------|----------|
+| `main/BSP/Src/bsp_iot_controller.c` | 新增缺失函数（见第五次会话） |
+
+---
+
+## 2026-03-26 15:30（第五次会话）
+
+### 主题：链接错误修复 + 设备名称"未知设备"问题排查
+
+### 本次修改文件
+
+#### 主机 BSP 层
+| 文件 | 修改内容 |
+|------|----------|
+| `main/BSP/Src/bsp_iot_controller.c` | 新增函数：`IOT_Controller_Init()`、`IOT_Set_Servo()`、`IOT_Broadcast_All_Off()`、`IOT_Broadcast_All_On()`、`IOT_Check_Device_Timeout()`、`IOT_Open_Medicine_Box()` |
+
+### 编译错误修复记录
+
+#### 错误1：函数签名不匹配
+```
+error: conflicting types for 'IOT_Set_Light'
+```
+**原因**：函数参数类型不一致。头文件声明 `uint8_t light_index`，实现写成 `int light_index`
+**修复**：将 `int light_index` 改为 `uint8_t light_index`
+
+#### 错误2：未定义引用
+```
+undefined reference to `IOT_Set_Servo'
+undefined reference to `IOT_Broadcast_All_Off'
+undefined reference to `IOT_Broadcast_All_On'
+```
+**修复**：在 `bsp_iot_controller.c` 末尾添加缺失的函数实现
+
+#### 错误3：`IOT_Set_Relay` 内部 bug
+**原因**：函数内部使用 `light_index` 而不是 `relay_index`
+```c
+// 修复前（错误）
+int gpio_index = light_index;
+
+// 修复后（正确）
+int gpio_index = relay_index;
+```
+
+---
+
+### ⚠️ 重要问题：设备名称"未知设备"
+
+#### 问题现象
+从机发送 `cmd=7`（旧协议 `IOT_CMD_ANNOUNCE`），主机收到后创建设备名为"未知设备"
+
+#### 日志证据
+```
+I (11229) APP_IOT: ESP-NOW received 8 bytes from 80:65:99:DF:C0:E0
+I (11239) BSP_IOT: Process_Remote_Response: mac=80:65:99:DF:C0:E0, cmd=7, found=-1, len=8
+Added remote device: 未知设备 (id=1, gpios=4)
+```
+
+#### 根本原因
+从机发送的是 **cmd=7**（`IOT_CMD_ANNOUNCE`），但代码中 `Send_Announce()` 使用的是 `IOT_CMD_ANNOUNCE_V2`（cmd=8）。这说明**从机固件没有更新**，仍在运行旧代码。
+
+#### 从机代码分析
+```c
+// esp_now_receive.c 第80-88行
+static void Send_Announce(const uint8_t* dest_mac) {
+    iot_announce_v2_packet_t resp = {
+        .command = IOT_CMD_ANNOUNCE_V2,  // cmd=8
+        ...
+        .device_name = DEVICE_NAME        // "一楼设备"
+    };
+    esp_now_send(dest_mac, (const uint8_t*)&resp, sizeof(resp));
+    ESP_LOGI(TAG, "Announce V2 sent: %s", DEVICE_NAME);
+}
+```
+
+#### 解决方案
+**重新编译并烧录所有从机**（一楼/二楼/三楼设备），确保使用最新代码。
+
+---
+
+## 2026-03-26 14:00（第四次会话）
+
+### 新增功能：三楼层设备控制 + 小智意图识别
+
+### 背景
+用户将药盒代码复制为三份（一楼/二楼/三楼设备），要求：
+- 移除药盒意图，保留舵机驱动
+- 每层设备：3 灯 + 3 继电器 + 3 舵机
+- 小智能通过 MCP 控制所有设备
+- 支持"一键全开/全关"意图
+
+### 修改文件清单
+
+#### 主机 BSP 层
+| 文件 | 修改内容 |
+|------|----------|
+| `main/BSP/Inc/bsp_iot_controller.h` | 新增命令枚举：`IOT_CMD_SET_LIGHT`(0x11)、`IOT_CMD_SET_RELAY`(0x12)、`IOT_CMD_BROADCAST_ALL_OFF`(0x30)、`IOT_CMD_BROADCAST_ALL_ON`(0x31) |
+| `main/BSP/Src/bsp_iot_controller.c` | 新增函数：`IOT_Set_Light()`、`IOT_Set_Relay()`、`IOT_Set_Servo()`、`IOT_Broadcast_All_Off()`、`IOT_Broadcast_All_On()` |
+
+#### 主机 APP 层
+| 文件 | 修改内容 |
+|------|----------|
+| `main/APP/Inc/iot_controller.h` | 新增函数声明：`App_IOT_Set_Light()`、`App_IOT_Set_Relay()`、`App_IOT_Set_Servo_ByIndex()`、`App_IOT_Broadcast_All_Off()`、`App_IOT_Broadcast_All_On()` |
+| `main/APP/Src/iot_controller.c` | 新增函数实现 |
+
+#### MCP 工具注册
+| 文件 | 新增工具 |
+|------|----------|
+| `main/boards/custom-esp32s3-cam/custom_esp32s3_cam.cc` | `self.iot.set_light`、`self.iot.set_relay`、`self.iot.set_servo_by_index`、`self.iot.all_off`、`self.iot.all_on` |
+
+### 从机代码结构（三份）
+```
+xiaozhi_slave_Firstfloor/   ← 一楼设备
+xiaozhi_slave_Secondfloor/  ← 二楼设备
+xiaozhi_slave_Thirdfloor/   ← 三楼设备
+```
+
+每份包含：
+- `iot_control_task.h` - 设备标志位枚举定义
+- `iot_control_task.c` - GPIO 定义 + Device_Refresh_Task
+- `esp_now_receive.c` - 命令解析（处理 IOT_CMD_BROADCAST_ALL_ON/OFF）
+
+### MCP 工具接口
+
+| MCP 工具 | 参数 | 功能 |
+|----------|------|------|
+| `self.iot.set_light` | device, index(0-2), value(true/false) | 控制灯光 |
+| `self.iot.set_relay` | device, index(0-2), value(true/false) | 控制继电器 |
+| `self.iot.set_servo_by_index` | device, index(0-2), angle(0/45/90/135) | 控制舵机角度 |
+| `self.iot.all_off` | (无) | **一键全关** |
+| `self.iot.all_on` | (无) | **一键全开** |
+
+### 广播命令流程
+```
+小智语音: "关闭所有设备"
+    ↓
+触发 MCP 工具: self.iot.all_off
+    ↓
+App_IOT_Broadcast_All_Off() → IOT_Broadcast_All_Off()
+    ↓
+ESP-NOW 广播 (FF:FF:FF:FF:FF:FF)
+    ↓
+所有从机收到 IOT_CMD_BROADCAST_ALL_OFF
+    ↓
+设置 g_device_flags 全为 OFF/默认值
+    ↓
+Device_Refresh_Task() 每 100ms 刷新 GPIO
+```
+
+### 架构优点
+1. **标志位驱动**：意图简单 → 标志位简单 → 执行简单
+2. **广播一次，全设备响应**：无需遍历设备列表
+3. **枚举类型安全**：灯/继电器用 ON/OFF，舵机用 0/45/90/135
+
+---
+
 ## 2026-03-25 21:15（第三次会话）
 
 ### 问题诊断：药盒控制"离线"Bug修复

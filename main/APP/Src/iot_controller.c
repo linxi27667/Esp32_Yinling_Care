@@ -187,23 +187,18 @@ static void Device_Timeout_Task(void* arg) {
 
 void App_IOT_System_Init(void) {
     ESP_LOGI(TAG, "Initializing IOT Controller...");
-    
+
     IOT_Controller_Init(&g_iot_controller);
-    
-    IOT_Add_Local_GPIO(&g_iot_controller, NULL, LOCAL_GPIO_1_PIN, "led1", IOT_GPIO_MODE_OUTPUT, 0);
-    IOT_Add_Local_GPIO(&g_iot_controller, NULL, LOCAL_GPIO_2_PIN, "led2", IOT_GPIO_MODE_OUTPUT, 0);
-    // IOT_Add_Local_GPIO(&g_iot_controller, NULL, LOCAL_GPIO_3_PIN, "relay1", IOT_GPIO_MODE_OUTPUT, 0);  // Removed for buzzer on GPIO14
-    IOT_Add_Local_GPIO(&g_iot_controller, NULL, LOCAL_GPIO_4_PIN, "relay2", IOT_GPIO_MODE_OUTPUT, 0);
-    ESP_LOGI(TAG, "LED1 -> GPIO48, LED2 -> GPIO46, Buzzer -> GPIO14, Relay2 -> GPIO38");
-    
+    ESP_LOGI(TAG, "IOT Controller initialized - no local GPIOs (all removed)");
+
     if (g_iot_controller.EspNow_Init) {
         g_iot_controller.EspNow_Init();
     }
-    
+
     xTaskCreate(Device_Timeout_Task, "iot_timeout", 2048, NULL, 1, NULL);
-    
+
     ESP_LOGI(TAG, "IOT Controller initialized with %d local GPIOs", g_iot_controller.local_gpio_count);
-    
+
     vTaskDelay(pdMS_TO_TICKS(1000));
     ESP_LOGI(TAG, "Auto-discovering nearby devices...");
     App_IOT_Discover_Devices();
@@ -304,6 +299,41 @@ bool App_IOT_Open_Medicine_Box(const char* device_name, uint8_t box_index) {
     }
 
     return IOT_Open_Medicine_Box(&g_iot_controller, device_index, box_index);
+}
+
+bool App_IOT_Set_Light(const char* device_name, uint8_t light_index, bool on) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
+        return false;
+    }
+    return IOT_Set_Light(&g_iot_controller, device_index, light_index, on ? 1 : 0);
+}
+
+bool App_IOT_Set_Relay(const char* device_name, uint8_t relay_index, bool on) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
+        return false;
+    }
+    return IOT_Set_Relay(&g_iot_controller, device_index, relay_index, on ? 1 : 0);
+}
+
+bool App_IOT_Set_Servo_ByIndex(const char* device_name, uint8_t servo_index, uint8_t angle) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
+        return false;
+    }
+    return IOT_Set_Servo(&g_iot_controller, device_index, servo_index, angle);
+}
+
+bool App_IOT_Broadcast_All_Off(void) {
+    return IOT_Broadcast_All_Off(&g_iot_controller);
+}
+
+bool App_IOT_Broadcast_All_On(void) {
+    return IOT_Broadcast_All_On(&g_iot_controller);
 }
 
 void App_IOT_Get_All_Status(char* buffer, int buffer_size) {

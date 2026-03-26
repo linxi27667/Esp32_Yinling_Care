@@ -19,6 +19,11 @@ bool App_IOT_Add_Remote_Device(const char* name, const uint8_t* mac, int gpio_co
 void App_IOT_Discover_Devices(void);
 bool App_IOT_Set_Servo(const char* device_name, const char* gpio_name, uint8_t angle);
 bool App_IOT_Open_Medicine_Box(const char* device_name, uint8_t box_index);
+bool App_IOT_Set_Light(const char* device_name, uint8_t light_index, bool on);
+bool App_IOT_Set_Relay(const char* device_name, uint8_t relay_index, bool on);
+bool App_IOT_Set_Servo_ByIndex(const char* device_name, uint8_t servo_index, uint8_t angle);
+bool App_IOT_Broadcast_All_Off(void);
+bool App_IOT_Broadcast_All_On(void);
 void App_IOT_Get_All_Status(char* buffer, int buffer_size);
 
 #ifdef __cplusplus
