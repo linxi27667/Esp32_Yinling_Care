@@ -1,17 +1,13 @@
 /**
  * @file    iot_control_task.c
- * @brief   一楼设备控制任务 (Flag-driven + Enum 架构)
+ * @brief   一楼设备控制任�?(Flag-driven + Enum 架构)
  *
- * 职责：
- * - 维护设备标志位（枚举类型）
- * - 定时刷新 GPIO 输出
+ * 职责�? * - 维护设备标志位（枚举类型�? * - 定时刷新 GPIO 输出
  *
- * 设备配置：3灯 + 3继电器 + 3舵机
+ * 设备配置�?�?+ 3继电�?+ 3舵机
  *
- * 架构原则：
- * - 设备状态全部使用枚举类型（易读、易扩展）
- * - 只读取标志位并刷新 GPIO
- * - 不处理任何 ESP-NOW 逻辑
+ * 架构原则�? * - 设备状态全部使用枚举类型（易读、易扩展�? * - 只读取标志位并刷�?GPIO
+ * - 不处理任�?ESP-NOW 逻辑
  * - 标志位由 esp_now_receive.c 更新
  */
 #include "iot_control_task.h"
@@ -33,7 +29,11 @@ static const char* TAG = "IOT_CTRL";
 
 #define SERVO_MIN_PULSEWIDTH_US 500
 #define SERVO_MAX_PULSEWIDTH_US 2500
-#define SERVO_MAX_ANGLE         135
+#define SERVO_MAX_ANGLE         180
+
+#define SERVO_CH_0              LEDC_CHANNEL_0
+#define SERVO_CH_1              LEDC_CHANNEL_1
+#define SERVO_CH_2              LEDC_CHANNEL_2
 
 static void HW_Gpio_Init(gpio_num_t gpio) {
     gpio_config_t cfg = {
@@ -54,7 +54,7 @@ static void HW_Gpio_Write(gpio_num_t gpio, uint8_t level) {
     }
 }
 
-static void HW_Servo_Init(gpio_num_t gpio) {
+static void HW_Servo_Init(gpio_num_t gpio, ledc_channel_t channel) {
     ledc_timer_config_t timer = {
         .speed_mode = LEDC_MODE,
         .timer_num = LEDC_TIMER,
@@ -78,11 +78,11 @@ static void HW_Servo_Init(gpio_num_t gpio) {
 }
 
 static void HW_Servo_Set_Angle(gpio_num_t gpio, int16_t angle) {
-    if (angle > 135) angle = 135;
-    if (angle < -135) angle = -135;
+    if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
+    if (angle < 0) angle = 0;
 
     float pulse_width = SERVO_MIN_PULSEWIDTH_US +
-        (float)(angle + 135) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE * 2);
+        (float)(angle) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE);
 
     uint32_t duty = (uint32_t)((pulse_width * 16384) / 20000);
 
@@ -100,12 +100,11 @@ static void HW_Servo_Set_Angle(gpio_num_t gpio, int16_t angle) {
 #define RELAY_GPIO_3     GPIO_NUM_15
 
 #define SERVO_GPIO_1     GPIO_NUM_18
-#define SERVO_GPIO_2     GPIO_NUM_19
-#define SERVO_GPIO_3     GPIO_NUM_20
-
+#define SERVO_GPIO_2     GPIO_NUM_21
+#define SERVO_GPIO_3     GPIO_NUM_40
 #define REFRESH_INTERVAL_MS     100
 
-/* ================= 3. 舵机角度映射表 ================= */
+/* ================= 3. 舵机角度映射�?================= */
 #define SERVO_ANGLE_0     0
 #define SERVO_ANGLE_45    45
 #define SERVO_ANGLE_90    90
@@ -118,7 +117,7 @@ static const int16_t g_servo_angle_map[4] = {
     [SERVO_135] = SERVO_ANGLE_135
 };
 
-/* ================= 4. 对象实例化 ================= */
+/* ================= 4. 对象实例�?================= */
 static gpio_num_t g_light_gpios[LIGHT_COUNT] = {
     LIGHT_GPIO_1, LIGHT_GPIO_2, LIGHT_GPIO_3
 };
@@ -173,7 +172,7 @@ static void Device_Refresh_Task(void* arg) {
     }
 }
 
-/* ================= 6. 对外初始化入口 ================= */
+/* ================= 6. 对外初始化入�?================= */
 void Iot_Control_Task_Init(void) {
     BaseType_t ret = xTaskCreate(
         Device_Refresh_Task,
@@ -191,3 +190,4 @@ void Iot_Control_Task_Init(void) {
                  LIGHT_COUNT, RELAY_COUNT, SERVO_COUNT);
     }
 }
+

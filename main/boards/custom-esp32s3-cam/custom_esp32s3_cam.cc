@@ -529,7 +529,8 @@ public:
             "Args:\n"
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 灯编号 (0-2)\n"
-            "  value: true=开, false=关",
+            "  value: true=开, false=关\n"
+            "中文灯名: " CHINESE_LIGHT_NAMES(),
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -558,7 +559,8 @@ public:
             "Args:\n"
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 继电器编号 (0-2)\n"
-            "  value: true=开, false=关",
+            "  value: true=开, false=关\n"
+            "中文继电器名: " CHINESE_RELAY_NAMES(),
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -587,7 +589,8 @@ public:
             "Args:\n"
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 舵机编号 (0-2)\n"
-            "  angle: 角度 (0/45/90/135)",
+            "  angle: 角度 (0/45/90/135/180)\n"
+            "中文舵机名: " CHINESE_SERVO_NAMES(),
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),

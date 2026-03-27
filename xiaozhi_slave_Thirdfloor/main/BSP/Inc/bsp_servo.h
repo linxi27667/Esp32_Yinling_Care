@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define SERVO_MIN_ANGLE    -135.0f
-#define SERVO_MAX_ANGLE    135.0f
+#define SERVO_MIN_ANGLE    0.0f
+#define SERVO_MAX_ANGLE    180.0f
 #define SERVO_MIN_PULSEWIDTH_US  500
 #define SERVO_MAX_PULSEWIDTH_US  2500
 

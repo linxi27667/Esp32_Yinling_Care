@@ -4,6 +4,57 @@
 
 ---
 
+## 2026-03-27 10:30（第十次会话）
+
+### 主题：180° 舵机修复 + 药盒 270° 保持不变
+
+### 问题描述
+用户控制一楼/二楼/三楼的舵机时，示波器测量有 PWM 信号但舵机不转动。
+
+### 根本原因
+**舵机角度参数不匹配**：
+- 一楼/二楼/三楼使用 **180° 舵机**
+- 代码按 **270° 舵机（药盒）** 参数计算
+- 180° 舵机期望脉宽：500µs(0°) ~ 2500µs(180°)，中值 1500µs = 90°
+- 旧代码给 90° 时，发送脉宽约 1667µs，舵机只转到约 67.5°，力量不够
+
+### 修复内容
+
+**修改文件**（一楼/二楼/三楼共6个文件）：
+- `xiaozhi_slave_Firstfloor/main/APP/Src/iot_control_task.c`
+- `xiaozhi_slave_Firstfloor/main/BSP/Inc/bsp_servo.h`
+- `xiaozhi_slave_Secondfloor/main/APP/Src/iot_control_task.c`
+- `xiaozhi_slave_Secondfloor/main/BSP/Inc/bsp_servo.h`
+- `xiaozhi_slave_Thirdfloor/main/APP/Src/iot_control_task.c`
+- `xiaozhi_slave_Thirdfloor/main/BSP/Inc/bsp_servo.h`
+
+**180° 舵机参数**：
+```c
+#define SERVO_MIN_ANGLE    0.0f      // 原 -135.0f
+#define SERVO_MAX_ANGLE    180.0f    // 原 135.0f（180°舵机角度范围 0-180°）
+```
+
+**180° 舵机脉宽公式**：
+```c
+// 旧公式（270°）：pulse = 500 + (angle + 135) * 2000 / 270
+// 新公式（180°）：pulse = 500 + angle * 2000 / 180
+```
+
+**药盒（270°）保持不变** ✅：
+```c
+#define SERVO_MIN_ANGLE    -135.0f
+#define SERVO_MAX_ANGLE    135.0f
+```
+
+### 修复后的 PWM 行为
+| 目标角度 | 180° 舵机脉宽 | 270° 舵机（药盒）脉宽 |
+|---------|--------------|---------------------|
+| 0° | 500µs | 500µs |
+| 90° | 1500µs | 1500µs |
+| 180° | 2500µs | 2500µs |
+
+---
+
 ## 2026-03-26 21:00（第九次会话）
 
 ### 主题：中文设备名称绑定 + 意图识别问题分析
@@ -47,51 +98,49 @@ IOT_CMD_BROADCAST_LIGHTS_ON  = 0x33  // 只开灯
 
 ---
 
-#### 2. 中文设备名称绑定（用于小智意图识别）
+#### 2. 中文设备名称宏（用于 MCP 意图识别）
 
-**修改文件**：
-- `xiaozhi_slave_Firstfloor/main/APP/Inc/iot_control_task.h`
-- `xiaozhi_slave_Secondfloor/main/APP/Inc/iot_control_task.h`
-- `xiaozhi_slave_Thirdfloor/main/APP/Inc/iot_control_task.h`
-
-**一楼设备中文名称**：
+**新增宏定义**（`main/APP/Inc/iot_controller.h`）：
 ```c
-#define LIGHT_1_CHINESE   "浴室灯"
-#define LIGHT_2_CHINESE   "客厅灯"
-#define LIGHT_3_CHINESE   "卧室灯"
+#define CHINESE_LIGHT_NAMES(n) \
+    "一楼设备:浴室灯/客厅灯/卧室灯; " \
+    "二楼设备:二楼浴室灯/二楼客厅灯/二楼卧室灯; " \
+    "三楼设备:三楼浴室灯/三楼客厅灯/三楼卧室灯"
 
-#define RELAY_1_CHINESE   "电视电源"
-#define RELAY_2_CHINESE   "空调电源"
-#define RELAY_3_CHINESE   "热水器电源"
+#define CHINESE_RELAY_NAMES(n) \
+    "一楼设备:电视电源/空调电源/热水器电源; " \
+    "二楼设备:二楼电视电源/二楼空调电源/二楼热水器电源; " \
+    "三楼设备:三楼电视电源/三楼空调电源/三楼热水器电源"
 
-#define SERVO_1_CHINESE   "窗户"
-#define SERVO_2_CHINESE   "窗帘"
-#define SERVO_3_CHINESE   "门锁"
+#define CHINESE_SERVO_NAMES(n) \
+    "一楼设备:窗户/窗帘/门锁; " \
+    "二楼设备:二楼窗户/二楼窗帘/二楼门锁; " \
+    "三楼设备:三楼窗户/三楼窗帘/三楼门锁"
 ```
 
-**二楼/三楼**：类似定义，添加 `二楼`/`三楼` 前缀。
+**MCP 工具使用宏**（`custom_esp32s3_cam.cc`）：
+```cpp
+mcp_server.AddTool("self.iot.set_light", ..., "中文灯名: " CHINESE_LIGHT_NAMES());
+mcp_server.AddTool("self.iot.set_relay", ..., "中文继电器名: " CHINESE_RELAY_NAMES());
+mcp_server.AddTool("self.iot.set_servo_by_index", ..., "中文舵机名: " CHINESE_SERVO_NAMES());
+```
+
+**效果**：AI 模型现在能识别用户说的"关浴室灯"、"打开二楼客厅灯"等中文别名。
 
 ---
 
-#### 2. 意图识别问题（待解决）
+#### 3. 意图识别问题 - 已通过 all_lights_on/off 解决
 
-**问题**："关闭所有灯" 会触发 "关闭所有设备"（包括继电器和舵机）
-
-**原因**：小智的意图识别配置问题，需要在小智的意图配置文件中区分：
-- `"关灯"` → 只关灯
-- `"关闭所有"` / `"全关"` → 关闭所有设备
-
-**待办**：需要用户提供小智意图配置文件位置进行修改。
+**原问题**："关闭所有灯" 会触发 "关闭所有设备"
+**解决方案**：添加 `self.iot.all_lights_on/off` 专门处理灯的控制
 
 ---
 
-#### 3. AudioCodec 卡死问题（暂不影响演示）
+#### 4. AudioCodec 卡死问题（暂不影响演示）
 
 **日志**：`I (95489) AudioCodec: Set output enable to false`
 
-**分析**：这是音频电源管理逻辑，当音频输出超过 `AUDIO_POWER_TIMEOUT_MS` 无活动时自动关闭输出。
-
-**状态**：暂不影响演示，待后续排查。
+**分析**：音频电源管理逻辑，暂不影响演示。
 
 ---
 

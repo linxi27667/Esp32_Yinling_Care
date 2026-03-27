@@ -33,7 +33,11 @@ static const char* TAG = "IOT_CTRL";
 
 #define SERVO_MIN_PULSEWIDTH_US 500
 #define SERVO_MAX_PULSEWIDTH_US 2500
-#define SERVO_MAX_ANGLE         135
+#define SERVO_MAX_ANGLE         180
+
+#define SERVO_CH_0              LEDC_CHANNEL_0
+#define SERVO_CH_1              LEDC_CHANNEL_1
+#define SERVO_CH_2              LEDC_CHANNEL_2
 
 static void HW_Gpio_Init(gpio_num_t gpio) {
     gpio_config_t cfg = {
@@ -54,7 +58,7 @@ static void HW_Gpio_Write(gpio_num_t gpio, uint8_t level) {
     }
 }
 
-static void HW_Servo_Init(gpio_num_t gpio) {
+static void HW_Servo_Init(gpio_num_t gpio, ledc_channel_t channel) {
     ledc_timer_config_t timer = {
         .speed_mode = LEDC_MODE,
         .timer_num = LEDC_TIMER,
@@ -64,30 +68,30 @@ static void HW_Servo_Init(gpio_num_t gpio) {
     };
     ledc_timer_config(&timer);
 
-    ledc_channel_config_t channel = {
+    ledc_channel_config_t ch_config = {
         .speed_mode = LEDC_MODE,
-        .channel = LEDC_CHANNEL_0,
+        .channel = channel,
         .gpio_num = gpio,
         .timer_sel = LEDC_TIMER,
         .duty = 0,
         .hpoint = 0
     };
-    ledc_channel_config(&channel);
+    ledc_channel_config(&ch_config);
 
-    ESP_LOGI(TAG, "Servo initialized on GPIO %d", gpio);
+    ESP_LOGI(TAG, "Servo initialized on GPIO %d, channel %d", gpio, channel);
 }
 
-static void HW_Servo_Set_Angle(gpio_num_t gpio, int16_t angle) {
-    if (angle > 135) angle = 135;
-    if (angle < -135) angle = -135;
+static void HW_Servo_Set_Angle(gpio_num_t gpio, ledc_channel_t channel, int16_t angle) {
+    if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
+    if (angle < 0) angle = 0;
 
     float pulse_width = SERVO_MIN_PULSEWIDTH_US +
-        (float)(angle + 135) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE * 2);
+        (float)(angle) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE);
 
     uint32_t duty = (uint32_t)((pulse_width * 16384) / 20000);
 
-    ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, duty);
-    ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
+    ledc_set_duty(LEDC_MODE, channel, duty);
+    ledc_update_duty(LEDC_MODE, channel);
 }
 
 /* ================= 2. GPIO 硬件定义 (人工可改) ================= */
@@ -131,6 +135,10 @@ static gpio_num_t g_servo_gpios[SERVO_COUNT] = {
     SERVO_GPIO_1, SERVO_GPIO_2, SERVO_GPIO_3
 };
 
+static ledc_channel_t g_servo_channels[SERVO_COUNT] = {
+    SERVO_CH_0, SERVO_CH_1, SERVO_CH_2
+};
+
 volatile device_flags_enum_t g_device_flags = {
     .light = {OFF, OFF, OFF},
     .relay = {OFF, OFF, OFF},
@@ -152,8 +160,8 @@ static void Device_Refresh_Task(void* arg) {
     }
 
     for (int i = 0; i < SERVO_COUNT; i++) {
-        HW_Servo_Init(g_servo_gpios[i]);
-        ESP_LOGI(TAG, "Servo[%d] -> GPIO%d", i, g_servo_gpios[i]);
+        HW_Servo_Init(g_servo_gpios[i], g_servo_channels[i]);
+        ESP_LOGI(TAG, "Servo[%d] -> GPIO%d, CH%d", i, g_servo_gpios[i], g_servo_channels[i]);
     }
 
     while (1) {
@@ -166,7 +174,7 @@ static void Device_Refresh_Task(void* arg) {
         }
 
         for (int i = 0; i < SERVO_COUNT; i++) {
-            HW_Servo_Set_Angle(g_servo_gpios[i], g_servo_angle_map[g_device_flags.servo[i]]);
+            HW_Servo_Set_Angle(g_servo_gpios[i], g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
         }
 
         vTaskDelay(pdMS_TO_TICKS(REFRESH_INTERVAL_MS));

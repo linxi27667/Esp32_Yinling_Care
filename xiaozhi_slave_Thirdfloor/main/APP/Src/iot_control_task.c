@@ -33,7 +33,7 @@ static const char* TAG = "IOT_CTRL";
 
 #define SERVO_MIN_PULSEWIDTH_US 500
 #define SERVO_MAX_PULSEWIDTH_US 2500
-#define SERVO_MAX_ANGLE         135
+#define SERVO_MAX_ANGLE         180
 
 static void HW_Gpio_Init(gpio_num_t gpio) {
     gpio_config_t cfg = {
@@ -78,11 +78,11 @@ static void HW_Servo_Init(gpio_num_t gpio) {
 }
 
 static void HW_Servo_Set_Angle(gpio_num_t gpio, int16_t angle) {
-    if (angle > 135) angle = 135;
-    if (angle < -135) angle = -135;
+    if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
+    if (angle < 0) angle = 0;
 
     float pulse_width = SERVO_MIN_PULSEWIDTH_US +
-        (float)(angle + 135) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE * 2);
+        (float)(angle) * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / (SERVO_MAX_ANGLE);
 
     uint32_t duty = (uint32_t)((pulse_width * 16384) / 20000);
 
