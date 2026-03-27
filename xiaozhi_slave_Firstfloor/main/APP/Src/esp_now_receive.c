@@ -166,9 +166,11 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
             break;
 
         case IOT_CMD_SET_SERVO:
-            if (cmd->gpio_index < SERVO_COUNT && cmd->value <= SERVO_135) {
-                g_device_flags.servo[cmd->gpio_index] = (servo_angle_enum_t)cmd->value;
-                ESP_LOGI(TAG, "Servo[%d] = %d deg", cmd->gpio_index, cmd->value);
+            if (cmd->gpio_index >= 6 && cmd->gpio_index < 6 + SERVO_COUNT &&
+                cmd->value % 45 == 0 && cmd->value <= 180) {
+                uint8_t servo_local_index = cmd->gpio_index - 6;
+                g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value / 45);
+                ESP_LOGI(TAG, "Servo[%d] (GPIO%d) = %d deg", servo_local_index, cmd->gpio_index, cmd->value);
                 Send_Response(src_mac, IOT_CMD_RESPONSE, cmd->gpio_index, cmd->value);
             }
             break;

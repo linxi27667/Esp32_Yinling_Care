@@ -4,6 +4,147 @@
 
 ---
 
+## 2026-03-27 14:30（第十二次会话）
+
+### 主题：set_servo_by_index 不工作 Bug 深度修复
+
+### 问题描述
+
+**现象**：
+- `all_on`/`all_off` 可以控制舵机
+- `set_servo_by_index` 发送命令后舵机不动
+- 日志显示命令接收到了：`ESP_NOW_RECV: Command: cmd=16, gpio=6, value=90`
+
+### 根本原因
+
+**两个独立问题**：
+
+#### 问题 1：枚举值 vs 实际角度值混淆
+- `all_on` 设置 `g_device_flags.servo[i] = SERVO_90`（枚举值 = 2）
+- `set_servo_by_index` 设置 `g_device_flags.servo[i] = 90`（实际角度值）
+- 但 `g_servo_angle_map[2] = 90°` ✅ 而 `g_servo_angle_map[90]` = 越界 ❌
+
+#### 问题 2：gpio_index 验证逻辑错误
+- Master 发送 `gpio_index=6,7,8`（全局 GPIO 索引）
+- Slave 检查 `gpio_index < SERVO_COUNT (3)`，即 `6 < 3 = FALSE`
+- **命令被直接拒绝！**
+
+### 修复内容
+
+**修复 1**：角度值→枚举转换
+```c
+// 修复前（错误）
+g_device_flags.servo[cmd->gpio_index] = (servo_angle_enum_t)cmd->value;
+
+// 修复后（正确）- 角度值除以45得到枚举索引
+g_device_flags.servo[cmd->gpio_index] = (servo_angle_enum_t)(cmd->value / 45);
+```
+
+**修复 2**：gpio_index 范围检查
+```c
+// 修复前（错误）
+if (cmd->gpio_index < SERVO_COUNT && cmd->value % 45 == 0 && cmd->value <= 180)
+
+// 修复后（正确）- 舵机GPIO索引是6,7,8
+if (cmd->gpio_index >= 6 && cmd->gpio_index < 6 + SERVO_COUNT &&
+    cmd->value % 45 == 0 && cmd->value <= 180) {
+    uint8_t servo_local_index = cmd->gpio_index - 6;  // 转换为本地索引0,1,2
+```
+
+### 修改文件清单
+
+| 文件 | 修改 |
+|------|------|
+| `xiaozhi_slave_Firstfloor/main/APP/Src/esp_now_receive.c` | gpio_index验证修复 + 角度→枚举转换 |
+| `xiaozhi_slave_Secondfloor/main/APP/Src/esp_now_receive.c` | gpio_index验证修复 + 角度→枚举转换 |
+| `xiaozhi_slave_Thirdfloor/main/APP/Src/esp_now_receive.c` | gpio_index验证修复 + 角度→枚举转换 |
+
+### 验证结果
+
+修复后日志：
+```
+I (68536) ESP_NOW_RECV: Servo[0] (GPIO6) = 90 deg   ← 正常工作
+I (70972) ESP_NOW_RECV: Servo[1] (GPIO7) = 90 deg
+I (73644) ESP_NOW_RECV: Servo[2] (GPIO8) = 90 deg
+```
+
+---
+
+## 2026-03-27 11:45（第十一次会话）
+
+### 主题：DEBUG_MODE 修复 + 按键角度循环 Bug 修复
+
+### 问题描述
+
+#### Bug 1：DEBUG_MODE==1 时小智无法控制舵机
+**现象**：按键调试正常，但小智发送 ESP-NOW 舵机命令时舵机不动
+
+**日志**：
+```
+I (310761) ESP_NOW_RECV: Command: cmd=16, gpio=6, value=90
+I (322971) ESP_NOW_RECV: Command: cmd=16, gpio=6, value=180
+```
+
+**根本原因**：`#if DEBUG_MODE != 1` 把 ESP-NOW 舵机刷新路径完全禁用
+
+```c
+// 错误代码 - DEBUG_MODE==1 时这段代码被注释掉
+for (int i = 0; i < SERVO_COUNT; i++) {
+#if DEBUG_MODE != 1
+    HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
+#endif
+}
+```
+
+#### Bug 2：按键角度循环 0→135 跳不到 180→0
+**现象**：0→45→90→135 正常，但 135 后跳到 45 而非 0
+
+**根本原因**：`% 180` 模数错误
+- `(180 + 45) % 180 = 45` ❌ 应该是 0
+
+### 修复内容
+
+**修复 1**：移除 ESP-NOW 舵机刷新的 DEBUG_MODE 条件编译
+
+```c
+// 修复后 - ESP-NOW 舵机控制始终启用
+for (int i = 0; i < SERVO_COUNT; i++) {
+    HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
+}
+```
+
+**修复 2**：角度循环改用 % 225（LCM of 45 and 180）
+
+```c
+// 修复后 - 0→45→90→135→180→0 正确循环
+g_debug_servo_current_angle = (g_debug_servo_current_angle + DEBUG_STEP_DEGREES) % 225;
+```
+
+### DEBUG_MODE 设计原则
+- **按键控制**：DEBUG_MODE==1 时启用 GPIO47 按键控制舵机
+- **小智控制**：始终启用，不受 DEBUG_MODE 影响
+- **两者共存**：按键和小智可以同时工作
+
+### 修改文件清单
+
+| 文件 | 修改 |
+|------|------|
+| `xiaozhi_slave_Firstfloor/main/APP/Src/iot_control_task.c` | 移除 `#if DEBUG_MODE != 1` 保护；`% 225` 修复 |
+| `xiaozhi_slave_Secondfloor/main/APP/Src/iot_control_task.c` | 移除 `#if DEBUG_MODE != 1` 保护；`% 225` 修复 |
+| `xiaozhi_slave_Thirdfloor/main/APP/Src/iot_control_task.c` | 移除 `#if DEBUG_MODE != 1` 保护；`% 225` 修复 |
+
+### 角度循环验证
+| 当前角度 | +45 后（%225） | 正确？ |
+|---------|---------------|--------|
+| 0 | 45 | ✅ |
+| 45 | 90 | ✅ |
+| 90 | 135 | ✅ |
+| 135 | 180 | ✅ |
+| 180 | 0 | ✅ |
+| 225 | 45 | ✅（回到起点） |
+
+---
+
 ## 2026-03-27 10:30（第十次会话）
 
 ### 主题：180° 舵机修复 + 药盒 270° 保持不变
@@ -52,6 +193,35 @@
 | 0° | 500µs | 500µs |
 | 90° | 1500µs | 1500µs |
 | 180° | 2500µs | 2500µs |
+
+### 🔴 关键 Bug 修复：LEDC 通道冲突
+
+**问题**：舵机 GPIO 有 PWM 信号但舵机不转，示波器测量波形不变。
+
+**根本原因**：所有 3 个舵机都使用同一个 `LEDC_CHANNEL_0`！
+```c
+// 错误代码
+ledc_channel_config_t channel = {
+    .channel = LEDC_CHANNEL_0,  // ❌ 三个舵机都用通道0
+    .gpio_num = gpio,           // 最后一个 GPIO40 覆盖了前面的
+};
+```
+**结果**：只有 GPIO40 有 PWM，GPIO18 和 GPIO21 被 GPIO40 覆盖！
+
+**修复方案**：每个舵机使用独立 LEDC 通道
+```c
+static ledc_channel_t g_servo_channels[SERVO_COUNT] = {
+    LEDC_CHANNEL_0, LEDC_CHANNEL_1, LEDC_CHANNEL_2
+};
+
+static void HW_Servo_Init(gpio_num_t gpio, ledc_channel_t channel);
+static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle);
+```
+
+**修改文件**：
+- `xiaozhi_slave_Firstfloor/main/APP/Src/iot_control_task.c`
+- `xiaozhi_slave_Secondfloor/main/APP/Src/iot_control_task.c`
+- `xiaozhi_slave_Thirdfloor/main/APP/Src/iot_control_task.c`
 
 ---
 

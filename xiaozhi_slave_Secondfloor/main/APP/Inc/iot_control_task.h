@@ -32,7 +32,8 @@ typedef enum {
     SERVO_0   = 0,
     SERVO_45  = 1,
     SERVO_90  = 2,
-    SERVO_135 = 3
+    SERVO_135 = 3,
+    SERVO_180 = 4
 } servo_angle_enum_t;
 
 /* ================= 中文设备名称绑定（用于小智意图识别） ================= */
