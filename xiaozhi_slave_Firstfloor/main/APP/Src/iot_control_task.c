@@ -108,8 +108,8 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 #define RELAY_GPIO_3     GPIO_NUM_15
 
 #define SERVO_GPIO_1     GPIO_NUM_18
-#define SERVO_GPIO_2     GPIO_NUM_19
-#define SERVO_GPIO_3     GPIO_NUM_20
+#define SERVO_GPIO_2     GPIO_NUM_21
+#define SERVO_GPIO_3     GPIO_NUM_40
 
 #define REFRESH_INTERVAL_MS     100
 
@@ -225,7 +225,9 @@ static void Device_Refresh_Task(void* arg) {
         }
 
         for (int i = 0; i < SERVO_COUNT; i++) {
+#if DEBUG_MODE != 1
             HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
+#endif
         }
 
         vTaskDelay(pdMS_TO_TICKS(REFRESH_INTERVAL_MS));

@@ -1,0 +1,177 @@
+/**
+ * @file    sensor_adc_task.c
+ * @brief   三楼从机统一传感器任务
+ *
+ * 职责：
+ * - 烟雾传感器检测（ADC）
+ * - 雨滴传感器检测（ADC）
+ * - 求助按键检测（GPIO）
+ * - 雨天自动收衣服逻辑触发
+ *
+ * 架构原则：
+ * - 统一采样周期 500ms
+ * - 软件多次采样平均（简单稳定）
+ * - 防抖处理，避免误触发
+ * - 只更新标志位，不操作硬件
+ * - 硬件操作由 Device_Refresh_Task 执行
+ */
+#include "sensor_adc_task.h"
+#include "iot_control_task.h"
+#include "sensor_config.h"
+#include "app_asr_uart.h"
+
+#include "esp_log.h"
+#include "driver/gpio.h"
+#include "driver/adc.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+static const char* TAG = "SENSOR_ADC";
+
+static uint8_t g_smoke_exceed_count = 0;
+static uint8_t g_rain_exceed_count = 0;
+static uint8_t g_last_help_btn = 1;
+static uint8_t g_fire_alert_sent = 0;
+static uint8_t g_help_alert_sent = 0;
+
+static void HW_Help_Button_Init(void) {
+    gpio_config_t cfg = {
+        .pin_bit_mask = (1ULL << HELP_BUTTON_GPIO),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&cfg);
+    ESP_LOGI(TAG, "Help button initialized on GPIO%d", HELP_BUTTON_GPIO);
+}
+
+static uint8_t HW_Help_Button_Is_Pressed(void) {
+    return gpio_get_level(HELP_BUTTON_GPIO) == 0;
+}
+
+static void HW_ADC_Init(void) {
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(SMOKE_ADC_CHANNEL, SMOKE_ADC_ATTEN);
+    adc1_config_channel_atten(RAIN_ADC_CHANNEL, RAIN_ADC_ATTEN);
+    ESP_LOGI(TAG, "ADC initialized: Smoke=CH0(GPIO1), Rain=CH2(GPIO3)");
+    ESP_LOGI(TAG, "Thresholds: Smoke>=%dmV, Rain Heavy<%dmV, Rain Light<%dmV",
+             SMOKE_THRESHOLD_FIRE, RAIN_THRESHOLD_HEAVY, RAIN_THRESHOLD_LIGHT);
+#if DEBUG_MODE == 1
+    ESP_LOGI(TAG, "DEBUG MODE: 5s interval logging enabled");
+#endif
+}
+
+static int32_t ADC_Get_Voltage_MV(adc1_channel_t channel) {
+    int sum = 0;
+    for (int i = 0; i < 16; i++) {
+        sum += adc1_get_raw(channel);
+    }
+    return (sum * 3100) / (4095 * 16);
+}
+
+static void Sensor_ADC_Task(void* arg) {
+    ESP_LOGI(TAG, "Sensor ADC task started");
+
+    HW_Help_Button_Init();
+    HW_ADC_Init();
+
+    while (1) {
+        int32_t smoke_mv = ADC_Get_Voltage_MV(SMOKE_ADC_CHANNEL);
+        int32_t rain_mv = ADC_Get_Voltage_MV(RAIN_ADC_CHANNEL);
+        uint8_t help_btn = HW_Help_Button_Is_Pressed();
+
+        if (smoke_mv >= SMOKE_THRESHOLD_FIRE) {
+            if (++g_smoke_exceed_count >= SMOKE_TRIGGER_COUNT) {
+                if (g_device_flags.fire_status != FIRE_STATUS_CONFIRMED) {
+                    g_device_flags.fire_status = FIRE_STATUS_CONFIRMED;
+                    ESP_LOGW(TAG, "[FIRE] Smoke >= 60%%! %ld mV >= %d mV",
+                             smoke_mv, SMOKE_THRESHOLD_FIRE);
+                }
+                if (!g_fire_alert_sent) {
+                    App_ASR_Send_Fire_Alert();
+                    g_fire_alert_sent = 1;
+                }
+            }
+        } else {
+            g_smoke_exceed_count = 0;
+            if (g_device_flags.fire_status != FIRE_STATUS_NORMAL) {
+                g_fire_alert_sent = 0;
+                g_device_flags.fire_status = FIRE_STATUS_NORMAL;
+                ESP_LOGI(TAG, "[FIRE] Smoke normal %ld mV < %d mV",
+                         smoke_mv, SMOKE_THRESHOLD_FIRE);
+            }
+        }
+
+        if (rain_mv <= RAIN_THRESHOLD_HEAVY) {
+            if (++g_rain_exceed_count >= RAIN_TRIGGER_COUNT) {
+                if (g_device_flags.rain_status != RAIN_STATUS_HEAVY) {
+                    g_device_flags.rain_status = RAIN_STATUS_HEAVY;
+                    ESP_LOGW(TAG, "[RAIN] Heavy rain! %ld mV <= %d mV",
+                             rain_mv, RAIN_THRESHOLD_HEAVY);
+                }
+            }
+        } else if (rain_mv <= RAIN_THRESHOLD_LIGHT) {
+            if (g_device_flags.rain_status == RAIN_STATUS_DRY) {
+                g_rain_exceed_count = 0;
+                g_device_flags.rain_status = RAIN_STATUS_LIGHT;
+                ESP_LOGI(TAG, "[RAIN] Light rain %ld mV <= %d mV",
+                         rain_mv, RAIN_THRESHOLD_LIGHT);
+            }
+        } else {
+            if (g_device_flags.rain_status != RAIN_STATUS_DRY) {
+                g_rain_exceed_count = 0;
+                g_device_flags.rain_status = RAIN_STATUS_DRY;
+                ESP_LOGI(TAG, "[RAIN] Dry %ld mV > %d mV",
+                         rain_mv, RAIN_THRESHOLD_LIGHT);
+            }
+        }
+
+        if (g_last_help_btn == 1 && help_btn == 0) {
+            g_device_flags.help_status = HELP_STATUS_ACTIVE;
+            ESP_LOGI(TAG, "[HELP] Button pressed!");
+            if (!g_help_alert_sent) {
+                App_ASR_Send_Help_Alert();
+                g_help_alert_sent = 1;
+            }
+        }
+        if (help_btn == 1) {
+            g_help_alert_sent = 0;
+        }
+        g_last_help_btn = help_btn;
+
+#if DEBUG_MODE == 1
+        static uint32_t last_log = 0;
+        uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        if (now - last_log >= 5000) {
+            ESP_LOGI(TAG, "[DEBUG] Smoke: %ld mV, Rain: %ld mV, Help: %d",
+                     smoke_mv, rain_mv, help_btn);
+            ESP_LOGI(TAG, "[DEBUG] Status -> Fire: %d, Rain: %d, Help: %d",
+                     g_device_flags.fire_status,
+                     g_device_flags.rain_status,
+                     g_device_flags.help_status);
+            last_log = now;
+        }
+#endif
+
+        vTaskDelay(pdMS_TO_TICKS(ADC_SAMPLE_INTERVAL_MS));
+    }
+}
+
+void Sensor_ADC_Task_Init(void) {
+    BaseType_t ret = xTaskCreatePinnedToCore(
+        Sensor_ADC_Task,
+        "Sensor_ADC",
+        4096,
+        NULL,
+        4,
+        NULL,
+        1
+    );
+
+    if (ret != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create sensor ADC task");
+    } else {
+        ESP_LOGI(TAG, "Sensor ADC task initialized (interval: %d ms)", ADC_SAMPLE_INTERVAL_MS);
+    }
+}

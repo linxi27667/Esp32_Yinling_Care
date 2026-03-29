@@ -70,9 +70,9 @@ void EspNow_Heartbeat_Init(void) {
     BaseType_t ret = xTaskCreate(
         Heartbeat_Task,
         "esp_now_hb",
-        2048,
+        3072,
         NULL,
-        4,
+        5,
         NULL
     );
 

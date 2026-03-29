@@ -1,18 +1,20 @@
 /**
  * @file    iot_control_task.c
- * @brief   一楼设备控制任务 (Flag-driven + Enum 架构)
+ * @brief   三楼设备控制任务 (Flag-driven + Enum 架构)
  *
  * 职责：
  * - 维护设备标志位（枚举类型）
  * - 定时刷新 GPIO 输出
+ * - 雨天自动收衣服逻辑
+ * - 火灾报警蜂鸣器控制
  *
- * 设备配置：3灯 + 3继电器 + 3舵机
+ * 设备配置：3灯 + 3继电器 + 3舵机 + 烟雾传感器 + 雨滴传感器 + 求助按键
  *
  * 架构原则：
  * - 设备状态全部使用枚举类型（易读、易扩展）
  * - 只读取标志位并刷新 GPIO
  * - 不处理任何 ESP-NOW 逻辑
- * - 标志位由 esp_now_receive.c 更新
+ * - 标志位由 esp_now_receive.c 和 sensor_adc_task.c 更新
  */
 #include "iot_control_task.h"
 
@@ -108,8 +110,8 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 #define RELAY_GPIO_3     GPIO_NUM_15
 
 #define SERVO_GPIO_1     GPIO_NUM_18
-#define SERVO_GPIO_2     GPIO_NUM_19
-#define SERVO_GPIO_3     GPIO_NUM_20
+#define SERVO_GPIO_2     GPIO_NUM_21
+#define SERVO_GPIO_3     GPIO_NUM_40
 
 #define REFRESH_INTERVAL_MS     100
 
@@ -146,7 +148,10 @@ static gpio_num_t g_servo_gpios[SERVO_COUNT] = {
 volatile device_flags_enum_t g_device_flags = {
     .light = {OFF, OFF, OFF},
     .relay = {OFF, OFF, OFF},
-    .servo = {SERVO_0, SERVO_0, SERVO_0}
+    .servo = {SERVO_0, SERVO_0, SERVO_0},
+    .fire_status = FIRE_STATUS_NORMAL,
+    .rain_status = RAIN_STATUS_DRY,
+    .help_status = HELP_STATUS_INACTIVE
 };
 
 #if DEBUG_MODE == 1
@@ -206,6 +211,8 @@ static void Device_Refresh_Task(void* arg) {
     }
 
     static uint8_t last_btn_state = 1;
+    static uint8_t last_fire_status = FIRE_STATUS_NORMAL;
+    static uint8_t rain_auto_closed = 0;
 
     while (1) {
 #if DEBUG_MODE == 1
@@ -216,6 +223,21 @@ static void Device_Refresh_Task(void* arg) {
         last_btn_state = btn_state;
 #endif
 
+        if (g_device_flags.rain_status != RAIN_STATUS_DRY) {
+            if (g_device_flags.servo[1] != SERVO_180) {
+                g_device_flags.servo[1] = SERVO_180;
+                ESP_LOGI(TAG, "[RAIN] Auto close curtain (GPIO%d)", g_servo_gpios[1]);
+            }
+            rain_auto_closed = 1;
+        } else if (rain_auto_closed && g_device_flags.rain_status == RAIN_STATUS_DRY) {
+            rain_auto_closed = 0;
+        }
+
+        if (last_fire_status != g_device_flags.fire_status) {
+            last_fire_status = g_device_flags.fire_status;
+            ESP_LOGI(TAG, "[FIRE] Status changed to: %d", last_fire_status);
+        }
+
         for (int i = 0; i < LIGHT_COUNT; i++) {
             HW_Gpio_Write(g_light_gpios[i], g_device_flags.light[i]);
         }
@@ -225,7 +247,9 @@ static void Device_Refresh_Task(void* arg) {
         }
 
         for (int i = 0; i < SERVO_COUNT; i++) {
+#if DEBUG_MODE != 1
             HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
+#endif
         }
 
         vTaskDelay(pdMS_TO_TICKS(REFRESH_INTERVAL_MS));

@@ -11,6 +11,7 @@
  * - esp_now_receive.c   : ESP-NOW 接收 + 命令解析
  * - esp_now_heartbeat.c : 心跳包发送
  * - iot_control_task.c  : 设备标志位刷新 + GPIO 控制
+ * - sensor_adc_task.c   : 烟雾/雨滴/求助传感器检测
  */
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +32,8 @@
 #include "esp_now_receive.h"
 #include "esp_now_heartbeat.h"
 #include "iot_control_task.h"
+#include "sensor_adc_task.h"
+#include "app_asr_uart.h"
 
 static const char* TAG = "MAIN";
 
@@ -58,6 +61,12 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Initializing Heartbeat...");
     EspNow_Heartbeat_Init();
+
+    ESP_LOGI(TAG, "Initializing ASR UART...");
+    App_ASR_UART_Init();
+
+    ESP_LOGI(TAG, "Initializing Sensor ADC...");
+    Sensor_ADC_Task_Init();
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "   IoT Slave Ready!");

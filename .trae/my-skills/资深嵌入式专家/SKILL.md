@@ -1,56 +1,129 @@
----
-name: "资深嵌入式专家"
-description: "资深嵌入式系统专家，擅长深度Bug排查、架构设计和代码质量把控。精通ESP32/单片机开发、RTOS、无线通信协议。能够通过日志分析、代码审查、对比实验等手段精准定位疑难Bug。"
----
+# 资深嵌入式系统专家 Skill
 
-# 资深嵌入式系统专家 (Senior Embedded Expert)
-
-## Profile
-你是一位来自顶级硬件大厂（大疆、华为等）的资深嵌入式软件工程师。你具备以下核心能力：
-
-1. **深度Bug排查**：通过日志分析、代码审查、交叉验证等手段精准定位疑难Bug
-2. **架构设计**：遵循"高内聚、低耦合"原则，设计可维护的嵌入式系统
-3. **协议理解**：精通ESP-NOW、MQTT、I2C、SPI等通信协议
-4. **实战经验**：丰富的GPIO、PWM、LEDC、FreeRTOS实战经验
-
-你的核心价值观是：**不修复症状，修复根因**。
+## 定位
+本Skill是资深嵌入式系统专家的实战经验总结，具备大厂级系统思维，精通ESP32/STM32单片机开发、RTOS实时操作系统、无线通信协议。擅长通过日志分析、代码审查、对比实验等手段精准定位疑难Bug。能够从系统架构层面设计高质量、可维护的嵌入式代码。
 
 ---
 
-## 核心能力
+## 一、嵌入式架构设计
 
-### 1. 深度Bug排查方法论
+### 1.1 混合分层架构（推荐）
 
-**排查流程（强制执行）**：
 ```
-1. 收集证据 → 2. 提出假设 → 3. 交叉验证 → 4. 定位根因 → 5. 修复验证
+┌─────────────────────────────────────────────────────────────────┐
+│                     嵌入式系统分层架构                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              业务逻辑层 (Business Logic)                 │    │
+│  │  iot_control.c / sys_fsm.c / ui_manager.c              │    │
+│  │  - 业务流转、协议解析、状态机                             │    │
+│  │  - 绝对禁止操作硬件寄存器                                 │    │
+│  │  - 只调用硬件驱动层暴露的高级API                         │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              ↓                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │           硬件驱动层 (Hardware Driver - 双层)             │    │
+│  │                                                         │    │
+│  │  ┌─────────────────┐    ┌─────────────────────────┐   │    │
+│  │  │  BSP层          │    │   APP_HW层 (硬件绑定)     │   │    │
+│  │  │  bsp_xxx.h/c    │ →  │   app_xxx.h/c            │   │    │
+│  │  │  - 纯逻辑抽象    │    │   - 物理引脚绑定         │   │    │
+│  │  │  - 平台无关     │    │   - HAL/SDK调用          │   │    │
+│  │  │  - 函数指针接口  │    │   - #include解禁区       │   │    │
+│  │  └─────────────────┘    └─────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              ↓                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                   芯片层 (Chip)                         │    │
+│  │  ESP-IDF / STM32 HAL / Arduino Core                   │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**日志分析技巧**：
-- 对比正常日志和异常日志的差异
-- 关注时间戳和执行顺序
-- 注意日志级别和过滤条件
+### 1.2 文件命名规范
 
-**代码审查技巧**：
-- 检查变量作用域和生命周期
-- 对比Master和Slave的协议约定
-- 验证枚举值和实际值的映射关系
+| 类型 | 命名规则 | 示例 |
+|------|----------|------|
+| BSP抽象层 | `bsp_xxx.h/c` | `bsp_motor.h`, `bsp_sw_i2c.h` |
+| 硬件绑定层 | `app_xxx.h/c` | `app_motor.h`, `app_mpu6050.h` |
+| 业务逻辑层 | `iot_xxx.c` | `iot_control.c`, `iot_fsm.c` |
+| 系统级 | `sys_xxx.c` | `sys_time.c`, `sys_event.c` |
 
-**交叉验证技巧**：
-- 确认修改影响范围（相关文件是否需要同步修改）
-- 使用对比实验（改一处vs改多处）
-
----
-
-### 2. 枚举状态架构
-
-**核心原则**：所有设备状态必须使用枚举类型，禁止使用裸 `uint8_t`。
+### 1.3 函数命名规范
 
 ```c
-/* 错误示例 - 裸uint8_t */
-uint8_t servo_angle = 90;  // 含义不清
+/* 硬件底层函数：HW_ 前缀 */
+static void HW_GPIO_Init(void);
+static void HW_Timer_Init(void);
+static void HW_UART_Send(uint8_t data);
 
-/* 正确示例 - 枚举类型 */
+/* BSP层抽象函数：大驼峰 */
+void BSP_Motor_Set_Speed(motor_t *motor, int speed);
+void BSP_LED_On(led_t *led);
+void BSP_LED_Off(led_t *led);
+
+/* 业务层函数：功能命名 */
+void IoT_Control_Process_Cmd(const char *json);
+void Sys_FSM_Transition(fsm_state_t new_state);
+void UI_Display_Update(screen_t *screen);
+
+/* 回调函数：_CB 后缀 */
+static void UART_Rx_Callback(void *arg);
+static void Timer_Overflow_Callback(void *arg);
+```
+
+---
+
+## 二、Flag-driven 架构详解
+
+### 2.1 核心思想
+
+**通信与硬件操作完全解耦，通过全局标志位传递状态。**
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ ESP-NOW接收  │    │  按键输入   │    │  定时器触发  │
+│   回调       │    │   任务      │    │    任务      │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                    │                    │
+       ↓                    ↓                    ↓
+┌─────────────────────────────────────────────────────────┐
+│              g_device_flags (全局枚举标志位)               │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐ │
+│  │ light[] │ │ relay[] │ │ servo[] │ │ fire_status │ │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│              Device_Refresh_Task                          │
+│  - 只读取标志位，不做判断                                 │
+│  - 统一刷新GPIO输出                                      │
+│  - 100ms周期执行                                         │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ↓
+              ┌─────────┐ ┌─────────┐ ┌─────────┐
+              │ 灯光GPIO │ │继电器GPIO│ │ 舵机PWM │
+              └─────────┘ └─────────┘ └─────────┘
+```
+
+### 2.2 枚举定义
+
+```c
+/* 设备状态枚举（安全、易读、可扩展） */
+typedef enum {
+    OFF = 0,
+    ON  = 1
+} device_onoff_enum_t;
+
+typedef enum {
+    LIGHT_OFF = 0,
+    LIGHT_ON  = 1
+} light_state_enum_t;
+
 typedef enum {
     SERVO_0   = 0,
     SERVO_45  = 1,
@@ -59,11 +132,27 @@ typedef enum {
     SERVO_180 = 4
 } servo_angle_enum_t;
 
-servo_angle_enum_t servo_angle = SERVO_90;  // 含义清晰
+typedef enum {
+    FIRE_STATUS_NORMAL    = 0,
+    FIRE_STATUS_WARNING   = 1,
+    FIRE_STATUS_CONFIRMED = 2
+} fire_status_enum_t;
+
+/* 全局设备标志位 */
+typedef struct {
+    device_onoff_enum_t light[3];
+    device_onoff_enum_t relay[3];
+    servo_angle_enum_t  servo[3];
+    fire_status_enum_t  fire_status;
+} device_flags_t;
+
+volatile device_flags_t g_device_flags;
 ```
 
-**枚举 → 实际值映射表**：
+### 2.3 刷新任务实现
+
 ```c
+/* 舵机角度映射表 */
 static const int16_t g_servo_angle_map[5] = {
     [SERVO_0]   = 0,
     [SERVO_45]  = 45,
@@ -72,166 +161,526 @@ static const int16_t g_servo_angle_map[5] = {
     [SERVO_180] = 180
 };
 
-// 使用时：实际角度 = g_servo_angle_map[枚举值]
-```
+static void Device_Refresh_Task(void *arg) {
+    while (1) {
+        /* 刷新灯光 */
+        for (int i = 0; i < 3; i++) {
+            gpio_set_level(light_gpio[i], g_device_flags.light[i]);
+        }
 
----
+        /* 刷新继电器 */
+        for (int i = 0; i < 3; i++) {
+            gpio_set_level(relay_gpio[i], g_device_flags.relay[i]);
+        }
 
-### 3. 条件编译模式设计
+        /* 刷新舵机 */
+        for (int i = 0; i < 3; i++) {
+            servo_set_angle(servo_channels[i],
+                          g_servo_angle_map[g_device_flags.servo[i]]);
+        }
 
-**DEBUG_MODE 设计原则**：
-- `#define DEBUG_MODE 0` = 正常模式（小智/远程控制）
-- `#define DEBUG_MODE 1` = 调试模式（本地按键控制）
-
-```c
-// 条件编译示例
-#if DEBUG_MODE == 1
-    // 按键初始化和轮询
-    HW_Button_Init(DEBUG_BTN_GPIO);
-    if (HW_Button_Is_Pressed()) {
-        Debug_Servo_Step();
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
-#else
-    // ESP-NOW 舵机刷新
-    HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
-#endif
+}
 ```
 
 ---
 
-### 4. 协议层Index映射
+## 三、通信协议设计
 
-**Master-Slave通信核心原则**：
-- Master发送的是**全局GPIO索引**（如6,7,8）
-- Slave需要根据本地设备布局进行**索引转换**
+### 3.1 ESP-NOW 协议封装
 
 ```c
-/* Master发送：gpio_index=6 (全局索引) */
-/* Slave接收后需要转换 */
-uint8_t local_index = gpio_index - 6;  // 转为本地索引0,1,2
-g_device_flags.servo[local_index] = ...;
+/* 协议包定义 */
+typedef struct __attribute__((packed)) {
+    uint8_t command;      /* 命令类型 */
+    uint8_t device_id;    /* 设备ID */
+    uint8_t gpio_index;   /* GPIO索引 */
+    uint8_t value;        /* 值 */
+    uint8_t reserved[4];  /* 保留 */
+} iot_command_packet_t;
+
+/* 命令枚举 */
+typedef enum {
+    IOT_CMD_SET_GPIO      = 0x01,
+    IOT_CMD_GET_GPIO      = 0x02,
+    IOT_CMD_SET_SERVO     = 0x10,
+    IOT_CMD_HEARTBEAT     = 0x04,
+    IOT_CMD_DISCOVER      = 0x06,
+    IOT_CMD_FIRE_ALARM    = 0x20
+} iot_command_enum_t;
+
+/* 发送响应 */
+static void Send_Response(const uint8_t *dest_mac,
+                         uint8_t cmd,
+                         uint8_t gpio_index,
+                         uint8_t value) {
+    iot_command_packet_t resp = {
+        .command = cmd,
+        .device_id = 0,
+        .gpio_index = gpio_index,
+        .value = value,
+        .reserved = {0}
+    };
+
+    esp_now_send(dest_mac, (const uint8_t *)&resp, sizeof(resp));
+}
+
+/* 接收回调 */
+static void EspNow_Recv_Callback(const uint8_t *mac,
+                                 const uint8_t *data,
+                                 int len) {
+    if (len < sizeof(iot_command_packet_t)) {
+        return;
+    }
+
+    iot_command_packet_t *cmd = (iot_command_packet_t *)data;
+
+    switch (cmd->command) {
+        case IOT_CMD_SET_GPIO:
+            if (cmd->gpio_index < 3) {
+                g_device_flags.light[cmd->gpio_index] =
+                    cmd->value ? ON : OFF;
+            }
+            break;
+
+        case IOT_CMD_SET_SERVO:
+            if (cmd->gpio_index >= 6 && cmd->gpio_index < 9) {
+                uint8_t servo_idx = cmd->gpio_index - 6;
+                g_device_flags.servo[servo_idx] = cmd->value / 45;
+            }
+            break;
+
+        case IOT_CMD_HEARTBEAT:
+            Send_Response(mac, IOT_CMD_RESPONSE, 0, 1);
+            break;
+    }
+}
+```
+
+### 3.2 心跳机制
+
+```c
+#define HEARTBEAT_INTERVAL_MS   30000
+
+static void Heartbeat_Task(void *arg) {
+    vTaskDelay(pdMS_TO_TICKS(5000));  /* 等待系统就绪 */
+
+    while (1) {
+        if (g_master_known) {
+            iot_command_packet_t hb = {
+                .command = IOT_CMD_HEARTBEAT,
+                .device_id = 0,
+                .gpio_index = 0,
+                .value = 0
+            };
+            esp_now_send(g_master_mac, (const uint8_t *)&hb, sizeof(hb));
+        }
+        vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS));
+    }
+}
 ```
 
 ---
 
-## 排错经验库
+## 四、GPIO 与外设驱动
 
-### Bug类型1：枚举值vs实际值混淆
+### 4.1 GPIO 操作封装
 
-**症状**：日志显示命令执行了，但设备行为异常
+```c
+/* BSP层：纯逻辑抽象 */
+typedef struct {
+    gpio_num_t pin;
+    void (*write)(gpio_num_t pin, uint8_t level);
+    uint8_t (*read)(gpio_num_t pin);
+} gpio_device_t;
 
-**典型案例**：
-- `all_on` 设置 `servo = SERVO_90`（枚举值=2）
-- `set_servo_by_index` 设置 `servo = 90`（实际角度值）
-- 两者都执行了，但后者使用 `g_servo_angle_map[90]` = 越界访问！
+void BSP_GPIO_Init(gpio_device_t *dev, gpio_num_t pin);
+void BSP_GPIO_Write(gpio_device_t *dev, uint8_t level);
+uint8_t BSP_GPIO_Read(gpio_device_t *dev);
 
-**排查方法**：
-1. 对比两个控制路径的日志
-2. 打印枚举值和实际值
-3. 检查映射表访问是否越界
+/* APP_HW层：硬件绑定 */
+static void HW_GPIO_Write(gpio_num_t pin, uint8_t level) {
+    gpio_set_level(pin, level);
+}
 
----
-
-### Bug类型2：Index映射错误
-
-**症状**：命令被接收但设备不响应
-
-**典型案例**：
-- Master发送 `gpio_index=6,7,8`
-- Slave检查 `gpio_index < 3`（错误！应该是 >=6）
-- 命令被验证逻辑拒绝
-
-**排查方法**：
-1. 确认Master和Slave的协议约定
-2. 打印接收到的原始gpio_index
-3. 验证范围检查逻辑
-
----
-
-### Bug类型3：条件编译路径覆盖
-
-**症状**：某模式下设备不响应，但代码看起来没问题
-
-**典型案例**：
-- DEBUG_MODE==1 时ESP-NOW路径被注释掉
-- 按键调试正常，但小智控制失败
-
-**排查方法**：
-1. 确认DEBUG_MODE当前值
-2. 检查条件编译分支是否正确
-3. 使用 `#if DEBUG_MODE == X` 而非 `#ifdef`
-
----
-
-## 交互指南
-
-### 1. 询问澄清（必要步骤）
-
-遇到以下情况时，**必须先问清楚再做修改**：
-- 用户需求描述模糊时
-- 不确定DEBUG_MODE应该影响哪些功能时
-- 不确定两个控制路径是否可以共存时
-
-**询问模板**：
-> "我理解你想要XX功能，但请确认：
-> 1. DEBUG_MODE==1时，按键和小智是否需要同时控制舵机？
-> 2. 还是DEBUG_MODE==1时只有按键，DEBUG_MODE==0时只有小智？"
-
----
-
-### 2. 验证假设
-
-修改前必须验证：
-- [ ] 影响范围：需要修改几个文件？
-- [ ] 相关性：类似代码是否需要同步修改？
-- [ ] 可逆性：修改是否容易回退？
-
----
-
-### 3. 精准描述
-
-给出修复时必须包含：
-- **根本原因**：不只是"不工作"，要解释"为什么不工作"
-- **修改位置**：具体文件和行号
-- **修改内容**：修复前vs修复后代码对比
-
----
-
-### 4. 进度可视化
-
-使用TodoList让用户了解进度：
-```
-[进行中] 深度分析问题根因
-[待处理] 修复Firstfloor代码
-[待处理] 修复Secondfloor代码
-[待处理] 验证测试
+gpio_device_t led = {
+    .pin = GPIO_NUM_2,
+    .write = HW_GPIO_Write
+};
 ```
 
+### 4.2 PWM 舵机控制
+
+```c
+#define SERVO_MIN_PULSEWIDTH_US  500
+#define SERVO_MAX_PULSEWIDTH_US  2500
+#define SERVO_MAX_ANGLE          180
+#define SERVO_PWM_FREQUENCY      50
+
+void BSP_Servo_Init(gpio_num_t gpio, ledc_channel_t channel) {
+    ledc_timer_config_t timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .timer_num = LEDC_TIMER_0,
+        .duty_resolution = LEDC_TIMER_14_BIT,
+        .freq_hz = SERVO_PWM_FREQUENCY,
+        .clk_cfg = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&timer);
+
+    ledc_channel_config_t ch = {
+        .gpio_num = gpio,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = channel,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = 0
+    };
+    ledc_channel_config(&ch);
+}
+
+void BSP_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
+    angle = (angle > 180) ? 180 : (angle < 0) ? 0 : angle;
+
+    float pulse_width = SERVO_MIN_PULSEWIDTH_US +
+        (float)angle * (SERVO_MAX_PULSEWIDTH_US - SERVO_MIN_PULSEWIDTH_US) / SERVO_MAX_ANGLE;
+
+    uint32_t duty = (uint32_t)((pulse_width * 16384) / 20000);
+
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
+}
+```
+
+### 4.3 ADC 采样
+
+```c
+#define ADC_SAMPLE_INTERVAL_MS   500
+#define ADC_TRIGGER_COUNT        3
+
+static void ADC_Sensor_Task(void *arg) {
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
+
+    int exceed_count = 0;
+
+    while (1) {
+        int adc_raw = adc1_get_raw(ADC1_CHANNEL_0);
+        int voltage_mv = (adc_raw * 1100) / 4095;
+
+        if (voltage_mv > FIRE_THRESHOLD_MV) {
+            if (++exceed_count >= ADC_TRIGGER_COUNT) {
+                g_device_flags.fire_status = FIRE_STATUS_CONFIRMED;
+                exceed_count = 0;
+            }
+        } else {
+            exceed_count = 0;
+            g_device_flags.fire_status = FIRE_STATUS_NORMAL;
+        }
+
+#if DEBUG_MODE == 1
+        static uint32_t last_log = 0;
+        uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        if (now - last_log >= 3000) {
+            ESP_LOGI(TAG, "ADC: %d mV", voltage_mv);
+            last_log = now;
+        }
+#endif
+
+        vTaskDelay(pdMS_TO_TICKS(ADC_SAMPLE_INTERVAL_MS));
+    }
+}
+```
+
 ---
 
-## 自我反思清单
+## 五、Bug 排查指南
 
-每次Bug修复后，问自己：
+### 5.1 常见错误分析
 
-1. **根因真的找到了吗？**
-   - 还是只修复了症状？
+| 错误现象 | 根本原因 | 解决方案 |
+|---------|---------|---------|
+| HardFault | 内存越界、栈溢出、非法指针 | 启用栈检测、检查数组边界 |
+| L6200E多重定义 | 头文件中定义变量 | 头文件用extern，.c中定义 |
+| 任务创建失败 | 堆内存不足、参数错误 | 检查剩余堆大小、验证参数 |
+| GPIO不响应 | 引脚模式错误、IO口冲突 | 检查GPIO配置、复用功能 |
+| 通信丢包 | 信号干扰、缓冲区不足 | 增加重传机制、增大队列 |
 
-2. **影响范围是否全覆盖？**
-   - 类似文件是否需要同步修改？
-   - Firstfloor/Secondfloor/Thirdfloor是否一致？
+### 5.2 调试技巧
 
-3. **假设是否验证过？**
-   - 是否有日志/测试证据支持我的假设？
+```c
+/* 1. 栈溢出检测 */
+#define configCHECK_FOR_STACK_OVERFLOW    2
 
-4. **下次如何更快定位？**
-   - 记录关键排查步骤到经验库
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    ESP_LOGE(TAG, "Stack overflow in %s", pcTaskName);
+}
+
+/* 2. 运行时栈水位查询 */
+void debug_task(void *arg) {
+    while (1) {
+        UBaseType_t watermark = uxTaskGetStackHighWaterMark(NULL);
+        ESP_LOGI(TAG, "Stack high water mark: %lu", watermark);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+
+/* 3. 内存统计 */
+void memory_debug_task(void *arg) {
+    while (1) {
+        multi_heap_info_t info;
+        heap_caps_get_info(&info, MALLOC_CAP_8BIT);
+        ESP_LOGI(TAG, "Free heap: %lu, alloc: %lu, free_internal: %lu",
+                 info.total_free_bytes,
+                 info.total_allocated_bytes,
+                 info.total_free_bytes - info.total_allocated_bytes);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+```
+
+### 5.3 日志分析
+
+```c
+/* 分级日志 */
+#define ESP_LOGE(tag, format, ...)  // 错误
+#define ESP_LOGW(tag, format, ...)  // 警告
+#define ESP_LOGI(tag, format, ...)  // 信息
+#define ESP_LOGD(tag, format, ...)  // 调试
+#define ESP_LOGV(tag, format, ...)  // 详细
+
+/* 条件日志（DEBUG_MODE控制） */
+#if DEBUG_MODE == 1
+    #define DEBUG_LOG(fmt, ...) ESP_LOGI(TAG, "[DEBUG] " fmt, ##__VA_ARGS__)
+#else
+    #define DEBUG_LOG(fmt, ...)
+#endif
+
+/* HEXdump调试 */
+void esp_log_buffer_hex(const char *tag, const void *buffer, size_t len);
+```
 
 ---
 
-## 核心金句
+## 六、FreeRTOS 最佳实践
 
-1. **"不修复症状，修复根因"**
-2. **"枚举比裸数字更安全"**
-3. **"假设需要验证，结论需要证据"**
-4. **"条件编译分支要仔细检查"**
-5. **"Master-Slave的Index映射必须对齐"**
+### 6.1 任务优先级分配
+
+| 优先级 | 任务 | 理由 |
+|:------:|------|------|
+| 中断 | ESP-NOW/UART回调 | 最高实时性 |
+| 3 | Device_Refresh | GPIO刷新影响用户体验 |
+| 4 | Sensor/ADC | 传感器采样，中等实时性 |
+| 5 | 通信任务 | ESP-NOW/WiFi |
+| 10 | 心跳/日志 | 低优先级，人工响应 |
+
+### 6.2 互斥保护
+
+```c
+/* 保护UART输出 */
+static SemaphoreHandle_t uart_mutex;
+
+void safe_printf(const char *fmt, ...) {
+    xSemaphoreTake(uart_mutex, portMAX_DELAY);
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    xSemaphoreGive(uart_mutex);
+}
+
+/* 保护共享数据结构 */
+static SemaphoreHandle_t data_mutex;
+
+void update_shared_data(data_t *data, uint8_t value) {
+    xSemaphoreTake(data_mutex, portMAX_DELAY);
+    data->value = value;
+    data->timestamp = xTaskGetTickCount();
+    xSemaphoreGive(data_mutex);
+}
+```
+
+### 6.3 队列设计
+
+```c
+/* 生产者-消费者队列 */
+QueueHandle_t sensor_queue;
+
+void sensor_producer(void *arg) {
+    sensor_data_t data;
+    while (1) {
+        read_sensor(&data);
+        if (xQueueSend(sensor_queue, &data, pdMS_TO_TICKS(100)) != pdTRUE) {
+            ESP_LOGW(TAG, "Queue full, data dropped");
+        }
+    }
+}
+
+void data_consumer(void *arg) {
+    sensor_data_t data;
+    while (1) {
+        if (xQueueReceive(sensor_queue, &data, pdMS_TO_TICKS(1000)) == pdTRUE) {
+            process_sensor_data(&data);
+        }
+    }
+}
+```
+
+---
+
+## 七、代码模板
+
+### 7.1 标准任务模板
+
+```c
+/**
+ * @file    xxx_task.c
+ * @brief   XXXX任务
+ */
+#include "xxx_task.h"
+
+static const char *TAG = "XXX_TASK";
+
+#define XXX_TASK_STACK_SIZE    4096
+#define XXX_TASK_PRIORITY      4
+#define XXX_TASK_INTERVAL_MS   500
+
+static void XXX_Task(void *arg) {
+    /* 初始化 */
+    ESP_LOGI(TAG, "Task started");
+
+    while (1) {
+        /* 任务逻辑 */
+
+        vTaskDelay(pdMS_TO_TICKS(XXX_TASK_INTERVAL_MS));
+    }
+}
+
+void XXX_Task_Init(void) {
+    BaseType_t ret = xTaskCreate(
+        XXX_Task,
+        "xxx_task",
+        XXX_TASK_STACK_SIZE,
+        NULL,
+        XXX_TASK_PRIORITY,
+        NULL
+    );
+
+    if (ret != pdPASS) {
+        ESP_LOGE(TAG, "Task creation failed!");
+    }
+}
+```
+
+### 7.2 中断回调模板
+
+```c
+/* 中断处理（不调用FreeRTOS API） */
+static void IRAM_ATTR gpio_isr_handler(void *arg) {
+    uint32_t gpio_num = (uint32_t)arg;
+    BaseType_t higher_priority_woken = pdFALSE;
+
+    /* 更新标志位（原子操作） */
+    g_gpio_intr_flags |= (1 << gpio_num);
+
+    /* 发送信号量通知任务 */
+    xTaskNotifyFromISR(task_handle,
+                       gpio_num,
+                       eSetBits,
+                       &higher_priority_woken);
+
+    portYIELD_FROM_ISR(higher_priority_woken);
+}
+```
+
+### 7.3 状态机模板
+
+```c
+typedef enum {
+    STATE_IDLE = 0,
+    STATE_WORKING,
+    STATE_ERROR,
+    STATE_RECOVERY
+} system_state_enum_t;
+
+static system_state_enum_t g_system_state = STATE_IDLE;
+
+void Sys_FSM_Process(system_event_enum_t event) {
+    system_state_enum_t prev_state = g_system_state;
+
+    switch (g_system_state) {
+        case STATE_IDLE:
+            if (event == EVENT_START) {
+                g_system_state = STATE_WORKING;
+            }
+            break;
+
+        case STATE_WORKING:
+            if (event == EVENT_ERROR) {
+                g_system_state = STATE_ERROR;
+            } else if (event == EVENT_STOP) {
+                g_system_state = STATE_IDLE;
+            }
+            break;
+
+        case STATE_ERROR:
+            if (event == EVENT_RECOVER) {
+                g_system_state = STATE_RECOVERY;
+            }
+            break;
+
+        case STATE_RECOVERY:
+            if (event == EVENT_RECOVERY_DONE) {
+                g_system_state = STATE_IDLE;
+            }
+            break;
+    }
+
+    if (prev_state != g_system_state) {
+        ESP_LOGI(TAG, "State: %d -> %d", prev_state, g_system_state);
+    }
+}
+```
+
+---
+
+## 八、架构优势总结
+
+| 原则 | 说明 |
+|------|------|
+| **高内聚** | 每个模块职责单一，代码高度内聚 |
+| **低耦合** | 模块间通过API通信，依赖最小化 |
+| **可测试** | 业务逻辑与硬件解耦，便于单元测试 |
+| **可扩展** | 新增功能只需添加模块，不影响现有代码 |
+| **可维护** | Flag-driven架构使状态管理清晰明了 |
+| **高性能** | 中断回调直接更新标志位，最小延迟 |
+
+---
+
+## 九、经验清单
+
+### 9.1 必须掌握
+
+- [ ] FreeRTOS任务创建、删除、优先级管理
+- [ ] 队列、信号量、互斥量、任务通知
+- [ ] ESP-NOW协议封装与回调处理
+- [ ] GPIO、PWM、ADC外设驱动
+- [ ] Flag-driven架构设计与实现
+- [ ] 中断与任务的同步机制
+- [ ] 栈溢出检测与内存管理
+
+### 9.2 高级技能
+
+- [ ] 双核调度与核心亲和性
+- [ ] 复杂状态机设计
+- [ ] 低功耗设计（Tickless）
+- [ ] OTA升级实现
+- [ ] 加密通信（TLS/MQTT）
+- [ ] 多协议网关设计
+
+### 9.3 调试能力
+
+- [ ] 日志分级与条件编译
+- [ ] 栈水位监控
+- [ ] 内存泄漏检测
+- [ ] 性能分析（trace）
+- [ ] HardFault快速定位
