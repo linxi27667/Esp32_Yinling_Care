@@ -15,12 +15,16 @@
 
 #include <stdint.h>
 #include "driver/gpio.h"
+#include "driver/adc.h"
+
+#define SENSOR_ADC_UNIT         ADC_UNIT_1
+#define SENSOR_ADC_NUM          2
 
 #define SMOKE_ADC_CHANNEL       ADC1_CHANNEL_0
 #define RAIN_ADC_CHANNEL        ADC1_CHANNEL_2
 
-#define SMOKE_ADC_ATTEN         ADC_ATTEN_DB_11
-#define RAIN_ADC_ATTEN          ADC_ATTEN_DB_11
+#define SMOKE_ADC_ATTEN         ADC_ATTEN_DB_12
+#define RAIN_ADC_ATTEN          ADC_ATTEN_DB_12
 
 #define ADC_SAMPLE_INTERVAL_MS  500
 

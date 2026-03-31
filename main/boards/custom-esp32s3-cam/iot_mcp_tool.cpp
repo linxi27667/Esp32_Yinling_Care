@@ -72,7 +72,50 @@ int Iot_Mcp_Wait_For_Response(int timeout_ms) {
 }
 
 bool Iot_Mcp_Set_Servo(const char* device_name, uint8_t angle) {
-    ESP_LOGI(TAG, "Set Servo: device=%s, angle=%d", 
+    ESP_LOGI(TAG, "Set Servo: device=%s, angle=%d",
              device_name ? device_name : "local", angle);
     return App_IOT_Set_Servo(device_name, "servo", angle);
+}
+
+bool Iot_Mcp_Scenario_Homecoming(void) {
+    ESP_LOGI(TAG, "[MCP] Scenario: Homecoming - opening door, turning on lights");
+    return App_IOT_Scenario_Homecoming("一楼设备", "all");
+}
+
+bool Iot_Mcp_Scenario_GoodNight(void) {
+    ESP_LOGI(TAG, "[MCP] Scenario: GoodNight - turning off all lights");
+    return App_IOT_Scenario_GoodNight("all");
+}
+
+bool Iot_Mcp_Scenario_Emergency(void) {
+    ESP_LOGW(TAG, "[MCP] EMERGENCY triggered!");
+    return App_IOT_Scenario_Emergency();
+}
+
+bool Iot_Mcp_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle) {
+    ESP_LOGI(TAG, "[MCP] Set Servo[%d] = %d deg on %s", servo_index, angle, device_name);
+    return App_IOT_Control_Servo_Angle(device_name, servo_index, angle);
+}
+
+bool Iot_Mcp_Scenario_Rain_Collect_Clothes(void) {
+    ESP_LOGI(TAG, "[MCP] Scenario: Rain - collecting clothes");
+    return App_IOT_Scenario_Rain_Collect_Clothes("三楼设备");
+}
+
+bool Iot_Mcp_Scenario_Ventilate(uint8_t window_angle, bool fan_on) {
+    ESP_LOGI(TAG, "[MCP] Scenario: Ventilate - windows=%d, fan=%s",
+             window_angle, fan_on ? "ON" : "OFF");
+    return App_IOT_Scenario_Ventilate("三楼设备", window_angle, fan_on ? 1 : 0);
+}
+
+bool Iot_Mcp_Open_Medicine_Box(const char* device_name, uint8_t box_index) {
+    ESP_LOGI(TAG, "[MCP] Open Medicine Box: device=%s, box=%d",
+             device_name ? device_name : "智能药盒", box_index);
+    return App_IOT_Open_Medicine_Box(device_name, box_index);
+}
+
+bool Iot_Mcp_Close_Medicine_Box(const char* device_name) {
+    ESP_LOGI(TAG, "[MCP] Close Medicine Box: device=%s",
+             device_name ? device_name : "智能药盒");
+    return App_IOT_Close_Medicine_Box(device_name);
 }

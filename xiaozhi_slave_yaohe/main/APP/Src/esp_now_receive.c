@@ -218,7 +218,6 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
 
         case IOT_CMD_BROADCAST_ALL_ON:
             g_device_flags.light_state = LIGHT_ON;
-            g_device_flags.box_state = MED_BOX_1;
             ESP_LOGI(TAG, "All devices ON (home mode)");
             break;
 

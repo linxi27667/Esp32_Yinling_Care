@@ -1,163 +1,151 @@
-# IoT Slave Device - IoT从机设备
+ *  正在执行任务: C:\Espressif\tools\ninja\1.12.1\ninja.EXE  
 
-IoT 控制系统从机设备，通过 ESP-NOW 接收主机命令控制 GPIO 和舵机。
+[0/1] Re-running CMake...-- Minimal build - ON
+-- Building ESP-IDF components for target esp32s3
+-- Checking Python dependencies...
+Python requirements are satisfied.
+Constraint file: C:\Espressif\tools\espidf.constraints.v5.5.txt
+Requirement files:
+ - E:\MCU\esp32\.espressif\v5.5.3\esp-idf\tools\requirements\requirements.core.txt
+Python being checked: C:\Espressif\tools\python\v5.5.3\venv\Scripts\python.exe
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
+-- Project sdkconfig file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig
+Loading defaults file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- USING O3
+-- App "iot_slave_yaohe_Secondfloor" version: b277b5a-dirty
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- Components: app_update bootloader bootloader_support cxx driver efuse esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_event esp_hw_support esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_system esp_timer esp_vfs_console esp_wifi esptool_py freertos hal heap log lwip main mbedtls newlib nvs_flash partition_table pthread sdmmc soc spi_flash vfs wpa_supplicant xtensa
+-- Component paths: E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/app_update E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/cxx E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/driver E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/efuse E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_app_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_bootloader_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_coex E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_common E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ana_cmpr E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_bitscrambler E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_dac E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gpio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gptimer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2c E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2s E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ledc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_mcpwm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_parlio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_pcnt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_rmt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdspi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_spi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_tsens E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_twai E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_uart E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_usb_serial_jtag E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_event E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_hw_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_mm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif_stack E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_partition E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_phy E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_pm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_psram E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_ringbuf E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_security E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_system E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_timer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_vfs_console E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_wifi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esptool_py E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/freertos E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/hal E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/heap E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/log E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/lwip E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/main E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/mbedtls E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/newlib E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/nvs_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/partition_table E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/pthread E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/spi_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/vfs E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/wpa_supplicant E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/xtensa
+-- Configuring done (19.3s)
+-- Generating done (1.0s)
+-- Build files have been written to: E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build
 
-## 功能特性
+[0/2] Re-running CMake...-- Minimal build - ON
+-- Building ESP-IDF components for target esp32s3
+-- Checking Python dependencies...
+Python requirements are satisfied.
+Constraint file: C:\Espressif\tools\espidf.constraints.v5.5.txt
+Requirement files:
+ - E:\MCU\esp32\.espressif\v5.5.3\esp-idf\tools\requirements\requirements.core.txt
+Python being checked: C:\Espressif\tools\python\v5.5.3\venv\Scripts\python.exe
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
+-- Project sdkconfig file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig
+Loading defaults file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- USING O3
+-- App "iot_slave_yaohe_Secondfloor" version: b277b5a-dirty
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- Components: app_update bootloader bootloader_support cxx driver efuse esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_event esp_hw_support esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_system esp_timer esp_vfs_console esp_wifi esptool_py freertos hal heap log lwip main mbedtls newlib nvs_flash partition_table pthread sdmmc soc spi_flash vfs wpa_supplicant xtensa
+-- Component paths: E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/app_update E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/cxx E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/driver E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/efuse E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_app_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_bootloader_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_coex E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_common E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ana_cmpr E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_bitscrambler E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_dac E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gpio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gptimer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2c E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2s E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ledc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_mcpwm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_parlio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_pcnt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_rmt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdspi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_spi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_tsens E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_twai E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_uart E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_usb_serial_jtag E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_event E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_hw_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_mm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif_stack E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_partition E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_phy E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_pm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_psram E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_ringbuf E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_security E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_system E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_timer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_vfs_console E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_wifi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esptool_py E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/freertos E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/hal E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/heap E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/log E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/lwip E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/main E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/mbedtls E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/newlib E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/nvs_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/partition_table E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/pthread E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/spi_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/vfs E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/wpa_supplicant E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/xtensa
+-- Configuring done (19.2s)
+-- Generating done (1.0s)
+-- Build files have been written to: E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build
 
-- 连接WiFi路由器（与主机同一网络）
-- 通过 ESP-NOW 接收主机的控制命令
-- 控制 4 个 LED（可扩展为继电器等其他设备）
-- 控制 2 个舵机（预留接口）
-- 自动发现主机并注册
-- 心跳保活机制
+[0/3] Re-running CMake...-- Minimal build - ON
+-- Building ESP-IDF components for target esp32s3
+-- Checking Python dependencies...
+Python requirements are satisfied.
+Constraint file: C:\Espressif\tools\espidf.constraints.v5.5.txt
+Requirement files:
+ - E:\MCU\esp32\.espressif\v5.5.3\esp-idf\tools\requirements\requirements.core.txt
+Python being checked: C:\Espressif\tools\python\v5.5.3\venv\Scripts\python.exe
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
+-- Project sdkconfig file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig
+Loading defaults file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- USING O3
+-- App "iot_slave_yaohe_Secondfloor" version: b277b5a-dirty
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- Components: app_update bootloader bootloader_support cxx driver efuse esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_event esp_hw_support esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_system esp_timer esp_vfs_console esp_wifi esptool_py freertos hal heap log lwip main mbedtls newlib nvs_flash partition_table pthread sdmmc soc spi_flash vfs wpa_supplicant xtensa
+-- Component paths: E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/app_update E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/cxx E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/driver E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/efuse E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_app_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_bootloader_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_coex E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_common E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ana_cmpr E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_bitscrambler E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_dac E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gpio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gptimer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2c E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2s E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ledc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_mcpwm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_parlio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_pcnt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_rmt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdspi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_spi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_tsens E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_twai E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_uart E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_usb_serial_jtag E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_event E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_hw_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_mm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif_stack E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_partition E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_phy E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_pm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_psram E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_ringbuf E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_security E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_system E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_timer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_vfs_console E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_wifi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esptool_py E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/freertos E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/hal E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/heap E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/log E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/lwip E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/main E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/mbedtls E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/newlib E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/nvs_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/partition_table E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/pthread E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/spi_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/vfs E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/wpa_supplicant E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/xtensa
+-- Configuring done (18.9s)
+-- Generating done (1.0s)
+-- Build files have been written to: E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build
 
-## 硬件配置
+[0/4] Re-running CMake...-- Minimal build - ON
+-- Building ESP-IDF components for target esp32s3
+-- Checking Python dependencies...
+Python requirements are satisfied.
+Constraint file: C:\Espressif\tools\espidf.constraints.v5.5.txt
+Requirement files:
+ - E:\MCU\esp32\.espressif\v5.5.3\esp-idf\tools\requirements\requirements.core.txt
+Python being checked: C:\Espressif\tools\python\v5.5.3\venv\Scripts\python.exe
+-- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
+-- Project sdkconfig file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig
+Loading defaults file E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/sdkconfig.defaults...
+-- Compiler supported targets: xtensa-esp-elf
+-- USING O3
+-- App "iot_slave_yaohe_Secondfloor" version: b277b5a-dirty
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.api.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.bt_funcs.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libgcc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.wdt.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.version.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_master.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_50.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_smp.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_dtm.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_test.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.ble_scan.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.libc.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom/esp32s3/ld/esp32s3.rom.newlib.ld
+-- Adding linker script E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc/esp32s3/ld/esp32s3.peripherals.ld
+-- Components: app_update bootloader bootloader_support cxx driver efuse esp_app_format esp_bootloader_format esp_coex esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_event esp_hw_support esp_mm esp_netif esp_netif_stack esp_partition esp_phy esp_pm esp_psram esp_ringbuf esp_rom esp_security esp_system esp_timer esp_vfs_console esp_wifi esptool_py freertos hal heap log lwip main mbedtls newlib nvs_flash partition_table pthread sdmmc soc spi_flash vfs wpa_supplicant xtensa
+-- Component paths: E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/app_update E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/bootloader_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/cxx E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/driver E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/efuse E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_app_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_bootloader_format E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_coex E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_common E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ana_cmpr E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_bitscrambler E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_dac E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gpio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_gptimer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2c E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_i2s E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_ledc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_mcpwm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_parlio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_pcnt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_rmt E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdio E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_sdspi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_spi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_tsens E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_twai E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_uart E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_driver_usb_serial_jtag E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_event E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_hw_support E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_mm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_netif_stack E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_partition E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_phy E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_pm E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_psram E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_ringbuf E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_rom E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_security E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_system E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_timer E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_vfs_console E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esp_wifi E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/esptool_py E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/freertos E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/hal E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/heap E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/log E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/lwip E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/main E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/mbedtls E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/newlib E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/nvs_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/partition_table E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/pthread E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/sdmmc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/soc E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/spi_flash E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/vfs E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/wpa_supplicant E:/MCU/esp32/.espressif/v5.5.3/esp-idf/components/xtensa
+-- Configuring done (18.9s)
+-- Generating done (1.0s)
+-- Build files have been written to: E:/MCU/esp32/xaiozhi1111111111111111111111111/xiaozhi-esp32-main/xiaozhi_slave_Secondfloor/build
 
-默认 GPIO 配置：
-
-| GPIO | 名称 | 功能 | 说明 |
-|------|------|------|------|
-| GPIO2 | led1 | LED 1 | 可改为继电器 |
-| GPIO4 | led2 | LED 2 | 可改为继电器 |
-| GPIO5 | led3 | LED 3 | 可改为继电器 |
-| GPIO18 | led4 | LED 4 | 可改为继电器 |
-| GPIO19 | servo1 | 舵机 1 | PWM控制 |
-| GPIO21 | servo2 | 舵机 2 | PWM控制 |
-
-**修改方法**：在 `main/iot_slave_main.c` 中修改以下宏定义：
-
-```c
-#define LED_GPIO_1      GPIO_NUM_2
-#define LED_GPIO_2      GPIO_NUM_4
-#define LED_GPIO_3      GPIO_NUM_5
-#define LED_GPIO_4      GPIO_NUM_18
-
-#define SERVO_GPIO_1    GPIO_NUM_19
-#define SERVO_GPIO_2    GPIO_NUM_21
-```
-
-## WiFi 配置
-
-**重要**：从机必须连接与主机相同的WiFi路由器！
-
-修改 `main/APP/Src/app_wifi.c`：
-
-```c
-// 在这里修改你的网络配置（与主机相同）
-#define ROUTER_SSID      "你的WiFi名称"
-#define ROUTER_PASSWORD  "你的WiFi密码"
-#define MAX_RETRY_TIMES  5
-```
-
-## 编译和烧录
-
-```bash
-# 进入从机目录
-cd xiaozhi_slave
-
-# 编译
-idf.py build
-
-# 烧录（替换 COM3 为你的串口）
-idf.py -p COM3 flash monitor
-```
-
-## 使用流程
-
-### 1. 烧录从机代码
-
-将代码烧录到 ESP32 从机设备。
-
-### 2. 获取从机 MAC 地址
-
-烧录后，查看日志，找到 MAC 地址：
-
-```
-I (xxx) IOT_SLAVE: Device MAC: AA:BB:CC:DD:EE:FF
-```
-
-### 3. 在主机上注册从机
-
-在小智主机上，修改 `custom_esp32s3_cam.cc`：
-
-```cpp
-void InitializeIot() {
-    if (Iot_Mcp_Init()) {
-        ESP_LOGI(TAG, "IOT controller initialized");
-        
-        // 添加从机设备（替换 MAC 地址）
-        uint8_t slave_mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-        App_IOT_Add_Remote_Device("bedroom", slave_mac, 6);  // 6个GPIO
-    }
-}
-```
-
-### 4. 控制从机
-
-**语音控制LED**：
-- "打开卧室的 led1"
-- "关闭卧室的 led2"
-
-**语音控制舵机**：
-- "把卧室的舵机转到90度"
-- "设置卧室 servo1 为45度"
-
-## 通信协议
-
-| 命令 | 值 | 说明 |
-|------|-----|------|
-| IOT_CMD_SET_GPIO | 0x01 | 设置 GPIO 输出（LED开/关） |
-| IOT_CMD_GET_GPIO | 0x02 | 读取 GPIO 状态 |
-| IOT_CMD_SET_SERVO | 0x10 | 设置舵机角度（0-180度） |
-| IOT_CMD_DISCOVER | 0x06 | 发现设备 |
-| IOT_CMD_ANNOUNCE | 0x07 | 设备公告 |
-| IOT_CMD_HEARTBEAT | 0x04 | 心跳检测 |
-
-## 项目结构
-
-```
-xiaozhi_slave/
-├── CMakeLists.txt           # 项目配置
-├── sdkconfig.defaults       # ESP-IDF 默认配置
-├── README.md               # 本文档
-└── main/
-    ├── CMakeLists.txt      # 组件配置
-    ├── iot_slave_main.c    # 主程序
-    ├── APP/                # 应用层
-    │   ├── Inc/
-    │   │   └── app_wifi.h
-    │   └── Src/
-    │       ├── app_wifi.c  # WiFi连接逻辑
-    │       └── ...
-    └── BSP/                # 底层驱动
-        ├── Inc/
-        │   └── bsp_wifi.h
-        └── Src/
-            ├── bsp_wifi.c  # WiFi驱动
-            └── ...
-```
-
-## 注意事项
-
-1. **WiFi必须相同**：从机和主机必须连接同一个WiFi路由器
-2. **通道匹配**：ESP-NOW 使用通道 1，确保WiFi路由器也在通道1
-3. **MAC 地址**：每个从机有唯一的 MAC 地址，需要在主机上注册
-4. **距离限制**：ESP-NOW 的有效距离约为 200 米（开放环境）
-5. **舵机供电**：舵机需要独立5V供电，ESP32的3.3V可能不足
-
-## 故障排除
-
-### WiFi连接失败
-- 检查SSID和密码是否正确
-- 确认路由器在通道1
-- 查看日志中的错误代码
-
-### 无法接收命令
-- 确认主机已注册从机MAC地址
-- 检查ESP-NOW初始化日志
-- 确认从机已发现主机
-
-### 舵机不转
-- 检查舵机供电是否充足
-- 确认GPIO引脚连接正确
-- 查看日志中的角度设置信息
+[0/5] Re-running CMake...

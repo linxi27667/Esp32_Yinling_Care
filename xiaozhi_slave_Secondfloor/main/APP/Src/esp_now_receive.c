@@ -207,8 +207,7 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
         case IOT_CMD_BROADCAST_ALL_ON:
             for (int i = 0; i < LIGHT_COUNT; i++) g_device_flags.light[i] = ON;
             for (int i = 0; i < RELAY_COUNT; i++) g_device_flags.relay[i] = ON;
-            for (int i = 0; i < SERVO_COUNT; i++) g_device_flags.servo[i] = SERVO_90;
-            ESP_LOGI(TAG, "All devices ON");
+            ESP_LOGI(TAG, "All lights and relays ON");
             break;
 
         case IOT_CMD_BROADCAST_LIGHTS_OFF:

@@ -4,6 +4,108 @@
 
 ---
 
+## 2026-03-29 21:30（第十三次会话）
+
+### 主题：三楼从机传感器系统重构 + 架构分析
+
+### 问题描述
+
+#### 问题1：DMA ADC 代码过于复杂
+之前的 DMA 连续转换模式代码复杂，资源消耗高，对于 500ms 采样间隔来说杀鸡用牛刀。
+
+#### 问题2：雨滴/烟雾传感器值不准确
+- 雨滴传感器电压值持续偏低（< 20mV），显示"Heavy rain"
+- 烟雾传感器值跳动大
+- ADC 参考电压计算错误（1100mV 应该是 3100mV）
+
+#### 问题3：ASR UART GPIO 冲突
+- GPIO 43/44 被 Console UART0 占用
+- ASR UART1 无法使用 GPIO 43
+
+#### 问题4：链接错误
+CMakeLists.txt 缺少 `bsp_asr_uart.c`，导致链接失败。
+
+### 修复内容
+
+#### 修复1：简化 ADC 为软件平均模式
+```c
+// 之前：DMA 连续转换（复杂）
+#include "esp_adc/adc_continuous.h"
+adc_continuous_handle_t g_adc_handle = NULL;
+adc_continuous_read(g_adc_handle, buf, ...);
+
+// 现在：软件16次平均（简单稳定）
+static int32_t ADC_Get_Voltage_MV(adc1_channel_t channel) {
+    int sum = 0;
+    for (int i = 0; i < 16; i++) {
+        sum += adc1_get_raw(channel);
+    }
+    return (sum * 3100) / (4095 * 16);  // 3100mV 参考电压
+}
+```
+
+#### 修复2：ASR UART 改为 GPIO 17
+```c
+// app_asr_uart.c
+#define ASR_UART_TX_PIN    GPIO_NUM_17  // 之前是 GPIO_NUM_43
+```
+
+#### 修复3：添加 bsp_asr_uart.c 到 CMakeLists.txt
+```cmake
+idf_component_register(SRCS ...
+                            "BSP/Src/bsp_asr_uart.c"  # 新增
+                        PRIV_REQUIRES ...)
+```
+
+### 新增功能
+
+#### DEBUG_MODE 5秒传感器日志
+```c
+#if DEBUG_MODE == 1
+    static uint32_t last_log = 0;
+    uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    if (now - last_log >= 5000) {
+        ESP_LOGI(TAG, "[DEBUG] Smoke: %ld mV, Rain: %ld mV, Help: %d",
+                 smoke_mv, rain_mv, help_btn);
+        ESP_LOGI(TAG, "[DEBUG] Status -> Fire: %d, Rain: %d, Help: %d",
+                 g_device_flags.fire_status,
+                 g_device_flags.rain_status,
+                 g_device_flags.help_status);
+        last_log = now;
+    }
+#endif
+```
+
+### 传感器阈值配置
+| 传感器 | 阈值 | 说明 |
+|--------|------|------|
+| 烟雾 | >= 1500mV | 60% 触发火灾报警 |
+| 雨滴-干燥 | > 2640mV | >80% 干燥 |
+| 雨滴-小雨 | 1320-2640mV | 40-80% |
+| 雨滴-大雨 | < 1320mV | <40% 触发收衣服 |
+
+### 修改文件清单
+
+| 文件 | 修改内容 |
+|------|----------|
+| `xiaozhi_slave_Thirdfloor/main/APP/Src/sensor_adc_task.c` | DMA→软件平均，16次采样 |
+| `xiaozhi_slave_Thirdfloor/main/APP/Src/app_asr_uart.c` | GPIO 43→GPIO 17 |
+| `xiaozhi_slave_Thirdfloor/main/APP/Inc/sensor_config.h` | 简化配置，移除DMA相关 |
+| `xiaozhi_slave_Thirdfloor/main/CMakeLists.txt` | 添加 bsp_asr_uart.c |
+
+### 新增文档
+
+| 文件 | 说明 |
+|------|------|
+| `xiaozhi_slave_Thirdfloor/三楼从机接线文档.md` | 完整接线图、传感器阈值、通信协议 |
+
+### 待办事项
+- [ ] 实际测试雨滴传感器（干燥状态应 > 2640mV）
+- [ ] 实际测试烟雾传感器（打火机靠近时 > 1500mV）
+- [ ] 验证 ASR 语音报警（GPIO17 连接正确）
+
+---
+
 ## 2026-03-27 14:30（第十二次会话）
 
 ### 主题：set_servo_by_index 不工作 Bug 深度修复

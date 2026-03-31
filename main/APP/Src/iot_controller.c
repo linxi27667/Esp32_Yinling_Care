@@ -301,6 +301,15 @@ bool App_IOT_Open_Medicine_Box(const char* device_name, uint8_t box_index) {
     return IOT_Open_Medicine_Box(&g_iot_controller, device_index, box_index);
 }
 
+bool App_IOT_Close_Medicine_Box(const char* device_name) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
+        return false;
+    }
+    return IOT_Open_Medicine_Box(&g_iot_controller, device_index, 0);
+}
+
 bool App_IOT_Set_Light(const char* device_name, uint8_t light_index, bool on) {
     int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
     if (device_index < 0) {
@@ -373,4 +382,81 @@ void App_IOT_Get_All_Status(char* buffer, int buffer_size) {
     }
     
     offset += snprintf(buffer + offset, buffer_size - offset, "]}");
+}
+
+bool App_IOT_Scenario_Homecoming(const char* first_floor_device, const char* all_floors_device) {
+    ESP_LOGI(TAG, "[SCENARIO] Homecoming started...");
+    bool success = true;
+    if (first_floor_device != NULL) {
+        if (!IOT_Set_Servo(&g_iot_controller, IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device), 2, 180)) {
+            ESP_LOGW(TAG, "Failed to open door");
+            success = false;
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    success = IOT_Broadcast_Lights_On(&g_iot_controller) && success;
+    ESP_LOGI(TAG, "[SCENARIO] Homecoming completed: door open, lights on");
+    return success;
+}
+
+bool App_IOT_Scenario_GoodNight(const char* all_floors_device) {
+    ESP_LOGI(TAG, "[SCENARIO] GoodNight: turning off all lights...");
+    return IOT_Broadcast_Lights_Off(&g_iot_controller);
+}
+
+bool App_IOT_Scenario_Emergency(void) {
+    ESP_LOGW(TAG, "[EMERGENCY] Triggering emergency protocol!");
+    for (int i = 0; i < g_iot_controller.remote_device_count; i++) {
+        iot_command_packet_t cmd = {
+            .command = IOT_CMD_EMERGENCY,
+            .device_id = g_iot_controller.remote_devices[i].device_id,
+            .gpio_index = 0,
+            .value = 1,
+            .reserved = {0}
+        };
+        if (g_iot_controller.EspNow_Send) {
+            g_iot_controller.EspNow_Send(g_iot_controller.remote_devices[i].mac_addr,
+                                         (const uint8_t*)&cmd, sizeof(cmd));
+        }
+    }
+    ESP_LOGW(TAG, "[EMERGENCY] Emergency command (0x34) sent to all slaves");
+    return true;
+}
+
+bool App_IOT_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Device '%s' not found", device_name);
+        return false;
+    }
+    ESP_LOGI(TAG, "Set Servo[%d] angle=%d on %s", servo_index, angle, device_name);
+    return IOT_Set_Servo(&g_iot_controller, device_index, servo_index, angle);
+}
+
+bool App_IOT_Scenario_Rain_Collect_Clothes(const char* third_floor_device) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, third_floor_device);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Device '%s' not found", third_floor_device);
+        return false;
+    }
+    ESP_LOGI(TAG, "[SCENARIO] Rain: collecting clothes, closing servo1 on 3rd floor");
+    bool success = IOT_Set_Servo(&g_iot_controller, device_index, 2, 0);
+    for (int i = 0; i < 3; i++) {
+        IOT_Set_Servo(&g_iot_controller, device_index, i, 0);
+    }
+    return success;
+}
+
+bool App_IOT_Scenario_Ventilate(const char* third_floor_device, uint8_t window_angle, uint8_t fan_on) {
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, third_floor_device);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Device '%s' not found", third_floor_device);
+        return false;
+    }
+    ESP_LOGI(TAG, "[SCENARIO] Ventilate: window=%d deg, fan=%s",
+             window_angle, fan_on ? "ON" : "OFF");
+    IOT_Set_Servo(&g_iot_controller, device_index, 0, window_angle);
+    IOT_Set_Servo(&g_iot_controller, device_index, 1, window_angle);
+    IOT_Set_Relay(&g_iot_controller, device_index, 0, fan_on);
+    return true;
 }

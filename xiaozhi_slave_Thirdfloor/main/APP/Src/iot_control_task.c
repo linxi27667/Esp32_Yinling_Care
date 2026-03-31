@@ -24,7 +24,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define DEBUG_MODE               1
+#define DEBUG_MODE               0
 #define DEBUG_BTN_GPIO          GPIO_NUM_47
 #define DEBUG_STEP_DEGREES      45
 
@@ -223,10 +223,10 @@ static void Device_Refresh_Task(void* arg) {
         last_btn_state = btn_state;
 #endif
 
-        if (g_device_flags.rain_status != RAIN_STATUS_DRY) {
-            if (g_device_flags.servo[1] != SERVO_180) {
-                g_device_flags.servo[1] = SERVO_180;
-                ESP_LOGI(TAG, "[RAIN] Auto close curtain (GPIO%d)", g_servo_gpios[1]);
+        if (g_device_flags.rain_status == RAIN_STATUS_HEAVY) {
+            if (g_device_flags.servo[1] != SERVO_0) {
+                g_device_flags.servo[1] = SERVO_0;
+                ESP_LOGI(TAG, "[RAIN] Auto close! Servo[1] (curtain) -> 0 deg");
             }
             rain_auto_closed = 1;
         } else if (rain_auto_closed && g_device_flags.rain_status == RAIN_STATUS_DRY) {

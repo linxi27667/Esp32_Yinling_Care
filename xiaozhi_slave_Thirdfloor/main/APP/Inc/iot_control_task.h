@@ -62,9 +62,9 @@ typedef enum {
 #define RELAY_2_CHINESE   "三楼空调电源"
 #define RELAY_3_CHINESE   "三楼热水器电源"
 
-#define SERVO_1_CHINESE   "三楼窗户"
-#define SERVO_2_CHINESE   "三楼窗帘"
-#define SERVO_3_CHINESE   "三楼阳台门"
+#define SERVO_1_CHINESE   "左天窗"
+#define SERVO_2_CHINESE   "右天窗"
+#define SERVO_3_CHINESE   "三楼晾衣架"
 
 /* ================= 设备标志位结构体 ================= */
 typedef struct {

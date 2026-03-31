@@ -436,8 +436,28 @@ void IOT_Check_Device_Timeout(iot_controller_t* dev, uint32_t timeout_ms) {
 }
 
 bool IOT_Open_Medicine_Box(iot_controller_t* dev, int device_index, uint8_t box_index) {
-    if (dev == NULL) return false;
-    return IOT_Set_Remote_Servo(dev, device_index, box_index, 90);
+    if (dev == NULL || device_index < 0 || device_index >= dev->remote_device_count) {
+        return false;
+    }
+
+    if (box_index > 6) {
+        return false;
+    }
+
+    iot_command_packet_t cmd = {
+        .command = IOT_CMD_OPEN_MEDICINE_BOX,
+        .device_id = dev->remote_devices[device_index].device_id,
+        .gpio_index = box_index,
+        .value = box_index,
+        .reserved = {0}
+    };
+
+    if (dev->EspNow_Send) {
+        return dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
+                                (const uint8_t*)&cmd, sizeof(cmd));
+    }
+
+    return false;
 }
 
 bool IOT_Set_Servo(iot_controller_t* dev, int device_index, uint8_t servo_index, uint8_t angle) {

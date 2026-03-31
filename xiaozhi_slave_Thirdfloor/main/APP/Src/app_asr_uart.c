@@ -79,3 +79,10 @@ void App_ASR_Send_Help_Alert(void) {
         ESP_LOGI(TAG, "[ASR] Help alert: 0x%02X", ASR_CMD_HELP_ALERT);
     }
 }
+
+void App_ASR_Send_Emergency_Alert(void) {
+    if (g_asr_uart_dev.is_init) {
+        BSP_ASR_Send_Command(&g_asr_uart_dev, ASR_CMD_EMERGENCY);
+        ESP_LOGW(TAG, "[ASR] Emergency alert triggered: 0x%02X", ASR_CMD_EMERGENCY);
+    }
+}

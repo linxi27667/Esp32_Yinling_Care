@@ -466,13 +466,12 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_servo",
-            "Control the servo motor on a remote ESP32 device to open medicine boxes sequentially.\n"
-            "For rotary medicine boxes with one exit, boxes are opened one by one.\n"
+            "控制转盘药盒的舵机转到指定位置。\n"
             "Args:\n"
-            "  device: Remote device name (e.g., '从机设备')\n"
-            "  box_indices: Comma-separated indices (e.g., '1' or '1,2,3' or '1-7')",
+            "  device: 设备名称（默认：智能药盒）\n"
+            "  box_indices: 药盒编号（如 '1' 或 '1,2,3'，0=关闭位置）",
             PropertyList({
-                Property("device", kPropertyTypeString, "从机设备"),
+                Property("device", kPropertyTypeString, "智能药盒"),
                 Property("box_indices", kPropertyTypeString, "Comma-separated box indices (e.g., '1' or '1,2,3' or '1-7')")
             }),
             [](const PropertyList& properties) -> ReturnValue {
@@ -610,6 +609,49 @@ public:
                 cJSON_AddNumberToObject(json, "angle", angle);
                 cJSON_AddStringToObject(json, "message", success ? "舵机已设置" : "操作失败");
 
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.clothes_rack",
+            "控制晾衣架的升降。\n"
+            "当用户说'晾衣服'、'把衣服晾起来'、'收衣服'、'把衣服收进来'时使用此工具。\n"
+            "Args:\n"
+            "  device: 设备名称（如'二楼设备'、'三楼设备'）\n"
+            "  action: 操作 - 'hang'表示晾衣服(180度)，'collect'表示收衣服(0度）",
+            PropertyList({
+                Property("device", kPropertyTypeString),
+                Property("action", kPropertyTypeString)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                auto device = properties["device"].value<std::string>();
+                auto action = properties["action"].value<std::string>();
+                
+                uint8_t angle = 0;
+                std::string action_desc;
+                
+                if (action == "hang") {
+                    angle = 180;
+                    action_desc = "晾衣服";
+                } else if (action == "collect") {
+                    angle = 0;
+                    action_desc = "收衣服";
+                } else {
+                    cJSON* json = cJSON_CreateObject();
+                    cJSON_AddBoolToObject(json, "success", false);
+                    cJSON_AddStringToObject(json, "message", "无效操作，请说'晾衣服'或'收衣服'");
+                    return json;
+                }
+                
+                bool success = App_IOT_Set_Servo_ByIndex(device.c_str(), 0, angle);
+                
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "device", device.c_str());
+                cJSON_AddStringToObject(json, "action", action_desc.c_str());
+                cJSON_AddNumberToObject(json, "angle", angle);
+                cJSON_AddStringToObject(json, "message", success ? 
+                    (angle == 180 ? "衣服已晾好" : "衣服已收进来") : "操作失败");
+                
                 return json;
             });
 
@@ -978,6 +1020,48 @@ public:
                 cJSON_AddStringToObject(json, "name", name.c_str());
                 cJSON_AddNumberToObject(json, "remaining", count);
                 cJSON_AddStringToObject(json, "message", success ? "药物剩余数量已更新" : "药物不存在");
+                
+                return json;
+            });
+
+        mcp_server.AddTool("self.medicine.close",
+            "关闭药盒，将转盘转到0号位置（空位）。\n"
+            "当用户说'关闭药盒'、'药盒关掉'、'不用药盒了'时使用此工具。\n"
+            "参数：\n"
+            "  device_name: 从机设备名称（可选，默认使用第一个在线从机）\n"
+            "返回值：\n"
+            "  操作结果",
+            PropertyList({
+                Property("device_name", kPropertyTypeString)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                std::string device_name;
+                
+                if (properties["device_name"].has_default_value() == false) {
+                    device_name = properties["device_name"].value<std::string>();
+                }
+                
+                const char* target_device = device_name.empty() ? nullptr : device_name.c_str();
+                
+                if (target_device == nullptr) {
+                    int device_count = Iot_Mcp_Get_Remote_Device_Count();
+                    if (device_count > 0) {
+                        target_device = Iot_Mcp_Get_Remote_Device_Name(0);
+                    }
+                }
+                
+                if (target_device == nullptr) {
+                    cJSON* json = cJSON_CreateObject();
+                    cJSON_AddBoolToObject(json, "success", false);
+                    cJSON_AddStringToObject(json, "message", "未找到从机设备");
+                    return json;
+                }
+                
+                bool success = Iot_Mcp_Close_Medicine_Box(target_device);
+                
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ? "药盒已关闭" : "关闭药盒失败");
                 
                 return json;
             });

@@ -1,6 +1,6 @@
 /**
  * @file    esp_now_receive.c
- * @brief   ESP-NOW 接收任务 (一楼设备)
+ * @brief   ESP-NOW 接收任务 (三楼设备)
  *
  * 职责：
  * - 注册 ESP-NOW 接收回调
@@ -12,6 +12,7 @@
  */
 #include "esp_now_receive.h"
 #include "iot_control_task.h"
+#include "app_asr_uart.h"
 
 #include "esp_log.h"
 #include "esp_wifi.h"
@@ -60,7 +61,8 @@ typedef enum {
     IOT_CMD_BROADCAST_ALL_OFF = 0x30,
     IOT_CMD_BROADCAST_ALL_ON = 0x31,
     IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32,
-    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33
+    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33,
+    IOT_CMD_EMERGENCY = 0x34
 } iot_command_t;
 
 /* ================= 设备名称定义 ================= */
@@ -207,8 +209,7 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
         case IOT_CMD_BROADCAST_ALL_ON:
             for (int i = 0; i < LIGHT_COUNT; i++) g_device_flags.light[i] = ON;
             for (int i = 0; i < RELAY_COUNT; i++) g_device_flags.relay[i] = ON;
-            for (int i = 0; i < SERVO_COUNT; i++) g_device_flags.servo[i] = SERVO_90;
-            ESP_LOGI(TAG, "All devices ON");
+            ESP_LOGI(TAG, "All lights and relays ON");
             break;
 
         case IOT_CMD_BROADCAST_LIGHTS_OFF:
@@ -219,6 +220,12 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
         case IOT_CMD_BROADCAST_LIGHTS_ON:
             for (int i = 0; i < LIGHT_COUNT; i++) g_device_flags.light[i] = ON;
             ESP_LOGI(TAG, "All lights ON");
+            break;
+
+        case IOT_CMD_EMERGENCY:
+            ESP_LOGW(TAG, "[EMERGENCY] Received emergency command from master!");
+            App_ASR_Send_Emergency_Alert();
+            g_device_flags.help_status = HELP_STATUS_ACTIVE;
             break;
 
         default:

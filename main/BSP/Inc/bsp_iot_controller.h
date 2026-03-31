@@ -91,7 +91,8 @@ typedef enum {
     IOT_CMD_BROADCAST_ALL_OFF = 0x30,
     IOT_CMD_BROADCAST_ALL_ON = 0x31,
     IOT_CMD_BROADCAST_LIGHTS_OFF = 0x32,
-    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33
+    IOT_CMD_BROADCAST_LIGHTS_ON = 0x33,
+    IOT_CMD_EMERGENCY = 0x34
 } iot_command_t;
 
 void IOT_Controller_Init(iot_controller_t* dev);

@@ -22,7 +22,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define DEBUG_MODE               1
+#define DEBUG_MODE               0
 #define DEBUG_BTN_GPIO          GPIO_NUM_47
 #define DEBUG_STEP_DEGREES      45
 
