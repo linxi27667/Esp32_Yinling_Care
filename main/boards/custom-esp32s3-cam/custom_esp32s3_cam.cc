@@ -529,7 +529,11 @@ public:
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 灯编号 (0-2)\n"
             "  value: true=开, false=关\n"
-            "中文灯名: " CHINESE_LIGHT_NAMES(),
+            "【重要】中文灯名到index的映射：\n"
+            "  一楼设备: index=0对应'大厅灯'\n"
+            "  二楼设备: index=0对应'主卧灯', index=1对应'次卧灯', index=2对应'客厅灯'\n"
+            "  三楼设备: index=0对应'阳台灯'\n"
+            "示例：打开主卧灯 -> device='二楼设备', index=0, value=true",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -559,7 +563,11 @@ public:
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 继电器编号 (0-2)\n"
             "  value: true=开, false=关\n"
-            "中文继电器名: " CHINESE_RELAY_NAMES(),
+            "【重要】中文继电器名到index的映射：\n"
+            "  一楼设备: 无继电器\n"
+            "  二楼设备: index=0对应'风扇'\n"
+            "  三楼设备: 无继电器\n"
+            "示例：打开风扇 -> device='二楼设备', index=0, value=true",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -589,7 +597,11 @@ public:
             "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
             "  index: 舵机编号 (0-2)\n"
             "  angle: 角度 (0/45/90/135/180)\n"
-            "中文舵机名: " CHINESE_SERVO_NAMES(),
+            "【重要】中文舵机名到index的映射：\n"
+            "  一楼设备: index=0对应'大门'\n"
+            "  二楼设备: index=0对应'晾衣架'\n"
+            "  三楼设备: index=0对应'左天窗', index=1对应'右天窗', index=2对应'晾衣架'\n"
+            "示例：打开晾衣架 -> device='二楼设备', index=0, angle=180",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -616,8 +628,9 @@ public:
             "控制晾衣架的升降。\n"
             "当用户说'晾衣服'、'把衣服晾起来'、'收衣服'、'把衣服收进来'时使用此工具。\n"
             "Args:\n"
-            "  device: 设备名称（如'二楼设备'、'三楼设备'）\n"
-            "  action: 操作 - 'hang'表示晾衣服(180度)，'collect'表示收衣服(0度）",
+            "  device: 设备名称 - '二楼设备'或'三楼设备'（晾衣架所在位置）\n"
+            "  action: 操作 - 'hang'表示晾衣服(180度)，'collect'表示收衣服(0度）\n"
+            "注意：二楼晾衣架在index=0，三楼晾衣架在index=2",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("action", kPropertyTypeString)
@@ -1271,14 +1284,33 @@ public:
             }),
             [](const PropertyList& properties) -> ReturnValue {
                 int alarm_id = properties["alarm_id"].value<int>();
-                
+
                 bool success = Alarm_Mcp_Remove(alarm_id);
-                
+
                 cJSON* json = cJSON_CreateObject();
                 cJSON_AddBoolToObject(json, "success", success);
                 cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
                 cJSON_AddStringToObject(json, "message", success ? "闹钟已删除" : "闹钟不存在");
-                
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.scene.emergency",
+            "触发紧急求救场景。\n"
+            "当用户说'救命'、'救命啊'、'救救我'、'SOS'、'紧急求救'等求救话语时使用此工具。\n"
+            "此命令会向所有从机设备发送紧急求救信号，三楼设备会发出警报声。\n"
+            "返回值：\n"
+            "  success: 是否成功发送求救信号\n"
+            "  message: 操作结果信息",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = Iot_Mcp_Scenario_Emergency();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ?
+                    "求救信号已发送，救援正在路上！" : "求救信号发送失败");
+
                 return json;
             });
     }

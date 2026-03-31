@@ -406,21 +406,21 @@ bool App_IOT_Scenario_GoodNight(const char* all_floors_device) {
 
 bool App_IOT_Scenario_Emergency(void) {
     ESP_LOGW(TAG, "[EMERGENCY] Triggering emergency protocol!");
-    for (int i = 0; i < g_iot_controller.remote_device_count; i++) {
-        iot_command_packet_t cmd = {
-            .command = IOT_CMD_EMERGENCY,
-            .device_id = g_iot_controller.remote_devices[i].device_id,
-            .gpio_index = 0,
-            .value = 1,
-            .reserved = {0}
-        };
-        if (g_iot_controller.EspNow_Send) {
-            g_iot_controller.EspNow_Send(g_iot_controller.remote_devices[i].mac_addr,
-                                         (const uint8_t*)&cmd, sizeof(cmd));
-        }
+    iot_command_packet_t cmd = {
+        .command = IOT_CMD_EMERGENCY,
+        .device_id = 0,
+        .gpio_index = 0,
+        .value = 1,
+        .reserved = {0}
+    };
+    if (g_iot_controller.EspNow_Send) {
+        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        bool result = g_iot_controller.EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+        ESP_LOGW(TAG, "[EMERGENCY] Emergency broadcast sent, result=%d", result);
+        return result;
     }
-    ESP_LOGW(TAG, "[EMERGENCY] Emergency command (0x34) sent to all slaves");
-    return true;
+    ESP_LOGE(TAG, "[EMERGENCY] EspNow_Send not initialized!");
+    return false;
 }
 
 bool App_IOT_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle) {
