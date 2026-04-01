@@ -15,6 +15,41 @@
 
 static const char* TAG = "BSP_IOT";
 
+typedef struct {
+    const char* alias;
+    const char* real_name;
+} device_name_alias_t;
+
+static const device_name_alias_t g_device_aliases[] = {
+    {"一楼大门", "一楼设备"},
+    {"一楼设备", "一楼设备"},
+    {"一楼", "一楼设备"},
+    {"大厅灯", "一楼设备"},
+    {"二楼设备", "二楼设备"},
+    {"二楼", "二楼设备"},
+    {"主卧", "二楼设备"},
+    {"主卧灯", "二楼设备"},
+    {"次卧", "二楼设备"},
+    {"次卧灯", "二楼设备"},
+    {"客厅", "二楼设备"},
+    {"二楼风扇", "二楼设备"},
+    {"风扇", "二楼设备"},
+    {"三楼", "三楼设备"},
+    {"三楼设备", "三楼设备"},
+    {"阳台灯", "三楼设备"},
+    {NULL, NULL}
+};
+
+static const char* IOT_Resolve_Alias(const char* name) {
+    if (name == NULL) return NULL;
+    for (int i = 0; g_device_aliases[i].alias != NULL; i++) {
+        if (strcmp(name, g_device_aliases[i].alias) == 0) {
+            return g_device_aliases[i].real_name;
+        }
+    }
+    return name;
+}
+
 int IOT_Add_Remote_Device(iot_controller_t* dev, const char* name, const uint8_t* mac, int gpio_count) {
     if (dev == NULL || dev->remote_device_count >= IOT_MAX_REMOTE_DEVICES) {
         return -1;
@@ -94,8 +129,10 @@ int IOT_Find_Device_By_Name(iot_controller_t* dev, const char* name) {
         return -1;
     }
 
+    const char* resolved_name = IOT_Resolve_Alias(name);
+
     for (int i = 0; i < dev->remote_device_count; i++) {
-        if (strcmp(dev->remote_devices[i].device_name, name) == 0) {
+        if (strcmp(dev->remote_devices[i].device_name, resolved_name) == 0) {
             return i;
         }
     }

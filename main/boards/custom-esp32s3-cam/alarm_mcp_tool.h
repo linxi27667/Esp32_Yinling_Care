@@ -50,6 +50,8 @@ bool Alarm_Mcp_Init(void);
 
 int Alarm_Mcp_Add_Timer(int minutes, const char* message);
 
+int Alarm_Mcp_Add_Timer_Seconds(int seconds, const char* message);
+
 int Alarm_Mcp_Add_Alarm(int hour, int minute, const char* message, bool repeat_daily);
 
 int Alarm_Mcp_Add_Medicine_Alarm(int hour, int minute, const char* medicine_name, bool repeat_daily);

@@ -576,7 +576,7 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_servo_by_index",
-            "控制舵机角度。Args: device(设备名), index(舵机编号0-2), angle(角度0-180)。\n"
+            "控制舵机角度。Args: device(设备名), index(舵机编号0-2), angle(角度0-70)。\n"
             "【设备映射】一楼:index0=大门;二楼:index0=晾衣架;三楼:index0=左天窗,index1=右天窗,index2=晾衣架。",
             PropertyList({
                 Property("device", kPropertyTypeString),
@@ -935,10 +935,10 @@ public:
                 auto message = properties["message"].value<std::string>();
 
                 int alarm_id = Alarm_Mcp_Add_Timer(minutes, message.c_str());
-                
+
                 cJSON* json = cJSON_CreateObject();
                 cJSON_AddBoolToObject(json, "success", alarm_id > 0);
-                
+
                 if (alarm_id > 0) {
                     cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
                     cJSON_AddNumberToObject(json, "minutes", minutes);
@@ -946,7 +946,33 @@ public:
                 } else {
                     cJSON_AddStringToObject(json, "error", "定时器创建失败");
                 }
-                
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.alarm.add_timer_seconds",
+            "设置秒级定时器（X秒后提醒）。Args: seconds(秒数), message(提醒内容)。",
+            PropertyList({
+                Property("seconds", kPropertyTypeInteger),
+                Property("message", kPropertyTypeString)
+            }),
+            [](const PropertyList& properties) -> ReturnValue {
+                int seconds = properties["seconds"].value<int>();
+                auto message = properties["message"].value<std::string>();
+
+                int alarm_id = Alarm_Mcp_Add_Timer_Seconds(seconds, message.c_str());
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", alarm_id > 0);
+
+                if (alarm_id > 0) {
+                    cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
+                    cJSON_AddNumberToObject(json, "seconds", seconds);
+                    cJSON_AddStringToObject(json, "message", message.c_str());
+                } else {
+                    cJSON_AddStringToObject(json, "error", "秒定时器创建失败");
+                }
+
                 return json;
             });
 
@@ -1044,6 +1070,36 @@ public:
                 return json;
             });
 
+        mcp_server.AddTool("self.scene.homing",
+            "回家场景。用户说'我回家了'/'回家模式'时触发，打开一楼大门并打开所有灯。\n"
+            "【注意】此场景会：1)打开一楼大门舵机 2)打开所有楼的灯。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = Iot_Mcp_Scenario_Homecoming();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ?
+                    "欢迎回家！大门已打开，灯已全部点亮" : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.scene.good_night",
+            "晚安场景。用户说'我睡觉了'/'晚安'时触发，关闭所有灯。\n"
+            "【注意】此场景只关闭灯，不影响继电器和舵机。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = Iot_Mcp_Scenario_GoodNight();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ?
+                    "晚安！所有灯已关闭，祝您好梦" : "操作失败");
+
+                return json;
+            });
+
         mcp_server.AddTool("self.scene.emergency",
             "紧急求救场景。用户说'救命'/'SOS'时触发，广播求救命令并启动蜂鸣器。",
             PropertyList(),
@@ -1099,3 +1155,4 @@ public:
 };
 
 DECLARE_BOARD(CustomEsp32s3Cam)
+

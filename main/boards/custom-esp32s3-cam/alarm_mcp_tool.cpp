@@ -144,11 +144,24 @@ int Alarm_Mcp_Add_Timer(int minutes, const char* message) {
         ESP_LOGE(TAG, "Invalid timer minutes: %d", minutes);
         return -1;
     }
-    
+
     time_t now;
     time(&now);
     int64_t trigger_time = (int64_t)now + (minutes * 60);
-    
+
+    return Add_Alarm_Internal(ALARM_TYPE_TIMER, trigger_time, message, NULL, false);
+}
+
+int Alarm_Mcp_Add_Timer_Seconds(int seconds, const char* message) {
+    if (seconds <= 0) {
+        ESP_LOGE(TAG, "Invalid timer seconds: %d", seconds);
+        return -1;
+    }
+
+    time_t now;
+    time(&now);
+    int64_t trigger_time = (int64_t)now + seconds;
+
     return Add_Alarm_Internal(ALARM_TYPE_TIMER, trigger_time, message, NULL, false);
 }
 

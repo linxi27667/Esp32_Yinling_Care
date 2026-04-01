@@ -388,7 +388,7 @@ bool App_IOT_Scenario_Homecoming(const char* first_floor_device, const char* all
     ESP_LOGI(TAG, "[SCENARIO] Homecoming started...");
     bool success = true;
     if (first_floor_device != NULL) {
-        if (!IOT_Set_Servo(&g_iot_controller, IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device), 2, 180)) {
+        if (!IOT_Set_Servo(&g_iot_controller, IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device), 0, 180)) {
             ESP_LOGW(TAG, "Failed to open door");
             success = false;
         }

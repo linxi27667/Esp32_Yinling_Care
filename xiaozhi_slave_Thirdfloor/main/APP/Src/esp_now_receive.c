@@ -1,14 +1,11 @@
 /**
  * @file    esp_now_receive.c
- * @brief   ESP-NOW 接收任务 (三楼设备)
+ * @brief   ESP-NOW 閹恒儲鏁规禒璇插 (娑撳銈肩拋鎯ь槵)
  *
- * 职责：
- * - 注册 ESP-NOW 接收回调
- * - 解析命令并更新设备标志位
+ * 閼卞矁鐭楅敍? * - 濞夈劌鍞?ESP-NOW 閹恒儲鏁归崶鐐剁殶
+ * - 鐟欙絾鐎介崨鎴掓姢楠炶埖娲块弬鎷岊啎婢跺洦鐖ｈ箛妞剧秴
  *
- * 架构原则：
- * - 只负责接收和解析，不直接操作硬件
- * - 通过更新全局标志位，由 iot_control_task 刷新 GPIO
+ * 閺嬭埖鐎崢鐔峰灟閿? * - 閸欘亣绀嬬拹锝嗗复閺€璺烘嫲鐟欙絾鐎介敍灞肩瑝閻╁瓨甯撮幙宥勭稊绾兛娆? * - 闁俺绻冮弴瀛樻煀閸忋劌鐪弽鍥х箶娴ｅ稄绱濋悽?iot_control_task 閸掗攱鏌?GPIO
  */
 #include "esp_now_receive.h"
 #include "iot_control_task.h"
@@ -24,12 +21,12 @@ static const char* TAG = "ESP_NOW_RECV";
 
 #define ESPNOW_CHANNEL  1
 
-/* ================= 主机 MAC 管理 ================= */
+/* ================= 娑撶粯婧€ MAC 缁狅紕鎮?================= */
 static uint8_t g_master_mac[6] = {0};
 static bool g_master_known = false;
 static uint8_t g_espnow_channel = 0;
 
-/* ================= 协议定义（与主机保持一致） ================= */
+/* ================= 閸楀繗顔呯€规矮绠熼敍鍫滅瑢娑撶粯婧€娣囨繃瀵旀稉鈧懛杈剧礆 ================= */
 typedef struct {
     uint8_t command;
     uint8_t device_id;
@@ -69,7 +66,7 @@ typedef enum {
 #define DEVICE_NAME "三楼设备"
 #define TOTAL_GPIO_COUNT 16
 
-/* ================= 响应发送 ================= */
+/* ================= 获取当前WiFi信道 ================= */
 static uint8_t Get_Current_Wifi_Channel(void) {
     wifi_ap_record_t ap_info;
     if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
@@ -133,7 +130,7 @@ static void Send_Announce(const uint8_t* dest_mac) {
     ESP_LOGI(TAG, "Announce V2 sent: %s (channel %d)", DEVICE_NAME, channel);
 }
 
-/* ================= 命令处理（只更新标志位） ================= */
+/* ================= 命令处理函数 ================= */
 static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* cmd) {
     ESP_LOGI(TAG, "Command: cmd=%d, gpio=%d, value=%d",
              cmd->command, cmd->gpio_index, cmd->value);
@@ -168,10 +165,17 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
             break;
 
         case IOT_CMD_SET_SERVO:
-            if (cmd->gpio_index >= 6 && cmd->gpio_index < 6 + SERVO_COUNT &&
-                cmd->value % 45 == 0 && cmd->value <= 180) {
+            if (cmd->gpio_index >= 6 && cmd->gpio_index < 6 + SERVO_COUNT) {
                 uint8_t servo_local_index = cmd->gpio_index - 6;
-                g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value / 45);
+                if (servo_local_index < 2) {
+                    if (cmd->value == 0 || cmd->value == 35 || cmd->value == 70) {
+                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : cmd->value == 35 ? 1 : 2);
+                    }
+                } else {
+                    if (cmd->value == 0 || cmd->value == 35 || cmd->value == 70) {
+                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : cmd->value == 35 ? 1 : 2);
+                    }
+                }
                 ESP_LOGI(TAG, "Servo[%d] (GPIO%d) = %d deg", servo_local_index, cmd->gpio_index, cmd->value);
                 Send_Response(src_mac, IOT_CMD_RESPONSE, cmd->gpio_index, cmd->value);
             }
@@ -234,7 +238,7 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
     }
 }
 
-/* ================= ESP-NOW 回调 ================= */
+/* ================= ESP-NOW 閸ョ偠鐨?================= */
 static void EspNow_Recv_Callback(const esp_now_recv_info_t* recv_info,
                                   const uint8_t* data, int len) {
     if (recv_info == NULL || recv_info->src_addr == NULL || data == NULL) {
@@ -260,7 +264,7 @@ static void EspNow_Send_Callback(const esp_now_send_info_t* tx_info,
     ESP_LOGD(TAG, "ESP-NOW Send status: %s", status == ESP_NOW_SEND_SUCCESS ? "SUCCESS" : "FAIL");
 }
 
-/* ================= 初始化 ================= */
+/* ================= 閸掓繂顫愰崠?================= */
 void EspNow_Receive_Init(void) {
     ESP_LOGI(TAG, "Initializing ESP-NOW...");
 

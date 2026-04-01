@@ -2,19 +2,14 @@
  * @file    iot_control_task.c
  * @brief   三楼设备控制任务 (Flag-driven + Enum 架构)
  *
- * 职责：
- * - 维护设备标志位（枚举类型）
- * - 定时刷新 GPIO 输出
- * - 雨天自动收衣服逻辑
- * - 火灾报警蜂鸣器控制
+ * 閼卞矁鐭楅敍? * - 缂佸瓨濮㈢拋鎯ь槵閺嶅洤绻旀担宥忕礄閺嬫矮濡囩猾璇茬€烽敍? * - 鐎规碍妞傞崚閿嬫煀 GPIO 鏉堟挸鍤?
+ * - 闂嗐劌銇夐懛顏勫З閺€鎯般€傞張宥夆偓鏄忕帆
+ * - 閻忣偆浼ㄩ幎銉劅閾氬倿绂忛崳銊﹀付閸? *
+ * 鐠佹儳顦柊宥囩枂閿?閻?+ 3缂佈呮暩閸?+ 3閼稿灚婧€ + 閻戠喖娴樻导鐘冲妳閸?+ 闂嗐劍娣导鐘冲妳閸?+ 濮瑰倸濮幐澶愭暛
  *
- * 设备配置：3灯 + 3继电器 + 3舵机 + 烟雾传感器 + 雨滴传感器 + 求助按键
- *
- * 架构原则：
- * - 设备状态全部使用枚举类型（易读、易扩展）
- * - 只读取标志位并刷新 GPIO
- * - 不处理任何 ESP-NOW 逻辑
- * - 标志位由 esp_now_receive.c 和 sensor_adc_task.c 更新
+ * 閺嬭埖鐎崢鐔峰灟閿? * - 鐠佹儳顦悩鑸碘偓浣稿弿闁劋濞囬悽銊︾亣娑撳墽琚崹瀣剁礄閺勬捁顕伴妴浣规閹碘晛鐫嶉敍? * - 閸欘亣顕伴崣鏍ㄧ垼韫囨ぞ缍呴獮璺哄煕閺?GPIO
+ * - 娑撳秴顦╅悶鍡曟崲娴?ESP-NOW 闁槒绶?
+ * - 閺嶅洤绻旀担宥囨暠 esp_now_receive.c 閸?sensor_adc_task.c 閺囧瓨鏌?
  */
 #include "iot_control_task.h"
 
@@ -30,7 +25,7 @@
 
 static const char* TAG = "IOT_CTRL";
 
-/* ================= 1. 硬件底层函数 (HW_ 前缀) ================= */
+/* ================= 1. 绾兛娆㈡惔鏇炵湴閸戣姤鏆?(HW_ 閸撳秶绱? ================= */
 #define LEDC_TIMER              LEDC_TIMER_0
 #define LEDC_MODE               LEDC_LOW_SPEED_MODE
 #define LEDC_DUTY_RES           LEDC_TIMER_14_BIT
@@ -100,7 +95,7 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
     ledc_update_duty(LEDC_MODE, channel);
 }
 
-/* ================= 2. GPIO 硬件定义 (人工可改) ================= */
+/* ================= 2. GPIO 绾兛娆㈢€规矮绠?(娴滃搫浼愰崣顖涙暭) ================= */
 #define LIGHT_GPIO_1     GPIO_NUM_2
 #define LIGHT_GPIO_2     GPIO_NUM_4
 #define LIGHT_GPIO_3     GPIO_NUM_5
@@ -117,16 +112,18 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 
 /* ================= 3. 舵机角度映射表 ================= */
 #define SERVO_ANGLE_0     0
-#define SERVO_ANGLE_45    45
-#define SERVO_ANGLE_90    90
+#define SERVO_ANGLE_35    35
+#define SERVO_ANGLE_70    70
 #define SERVO_ANGLE_135   135
 #define SERVO_ANGLE_180   180
+
+
 
 #if DEBUG_MODE != 1
 static const int16_t g_servo_angle_map[5] = {
     [SERVO_0]   = SERVO_ANGLE_0,
-    [SERVO_45]  = SERVO_ANGLE_45,
-    [SERVO_90]  = SERVO_ANGLE_90,
+    [SERVO_35]  = SERVO_ANGLE_35,
+    [SERVO_70]  = SERVO_ANGLE_70,
     [SERVO_135] = SERVO_ANGLE_135,
     [SERVO_180] = SERVO_ANGLE_180
 };
@@ -186,7 +183,7 @@ static void Debug_Servo_Step(void) {
 }
 #endif
 
-/* ================= 5. 设备刷新任务 ================= */
+/* ================= 5. 鐠佹儳顦崚閿嬫煀娴犺濮?================= */
 static void Device_Refresh_Task(void* arg) {
     ESP_LOGI(TAG, "Device refresh task started");
 
@@ -256,7 +253,7 @@ static void Device_Refresh_Task(void* arg) {
     }
 }
 
-/* ================= 6. 对外初始化入口 ================= */
+/* ================= 6. 任务初始化函数 ================= */
 void Iot_Control_Task_Init(void) {
     BaseType_t ret = xTaskCreate(
         Device_Refresh_Task,

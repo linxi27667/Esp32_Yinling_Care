@@ -2,16 +2,11 @@
  * @file    iot_control_task.h
  * @brief   三楼设备控制任务 (Flag-driven + Enum 架构)
  *
- * 职责：
- * - 维护设备标志位（枚举类型）
- * - 定时刷新 GPIO 输出
+ * 职责�? * - 维护设备标志位（枚举类型�? * - 定时刷新 GPIO 输出
  *
- * 设备配置：3灯 + 3继电器 + 3舵机 + 烟雾传感器 + 雨滴传感器 + 求助按键
+ * 设备配置�?�?+ 3继电�?+ 3舵机 + 烟雾传感�?+ 雨滴传感�?+ 求助按键
  *
- * 架构原则：
- * - 设备状态全部使用枚举类型（易读、易扩展）
- * - 枚举定义在此处，供其他模块引用
- */
+ * 架构原则�? * - 设备状态全部使用枚举类型（易读、易扩展�? * - 枚举定义在此处，供其他模块引�? */
 #ifndef IOT_CONTROL_TASK_H
 #define IOT_CONTROL_TASK_H
 
@@ -22,7 +17,7 @@
 #define RELAY_COUNT    3
 #define SERVO_COUNT    3
 
-/* ================= 设备状态枚举 ================= */
+/* ================= 设备状态枚�?================= */
 typedef enum {
     OFF = 0,
     ON  = 1
@@ -30,8 +25,8 @@ typedef enum {
 
 typedef enum {
     SERVO_0   = 0,
-    SERVO_45  = 1,
-    SERVO_90  = 2,
+    SERVO_35  = 1,
+    SERVO_70  = 2,
     SERVO_135 = 3,
     SERVO_180 = 4
 } servo_angle_enum_t;
@@ -53,17 +48,17 @@ typedef enum {
 } help_status_enum_t;
 
 /* ================= 中文设备名称绑定（用于小智意图识别） ================= */
-#define LIGHT_1_CHINESE   "三楼卧室灯"
-#define LIGHT_2_CHINESE   "三楼客厅灯"
-#define LIGHT_3_CHINESE   "三楼走廊灯"
+#define LIGHT_1_CHINESE   "三楼卧室�?
+#define LIGHT_2_CHINESE   "三楼客厅�?
+#define LIGHT_3_CHINESE   "三楼走廊�?
 
 #define RELAY_1_CHINESE   "三楼电视电源"
 #define RELAY_2_CHINESE   "三楼空调电源"
-#define RELAY_3_CHINESE   "三楼热水器电源"
+#define RELAY_3_CHINESE   "三楼热水器电�?
 
-#define SERVO_1_CHINESE   "左天窗"
-#define SERVO_2_CHINESE   "右天窗"
-#define SERVO_3_CHINESE   "三楼晾衣架"
+#define SERVO_1_CHINESE   "左天�?
+#define SERVO_2_CHINESE   "右天�?
+#define SERVO_3_CHINESE   "三楼晾衣�?
 
 /* ================= 设备标志位结构体 ================= */
 typedef struct {
