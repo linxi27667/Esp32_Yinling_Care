@@ -120,7 +120,6 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 #define SERVO_ANGLE_135   135
 #define SERVO_ANGLE_180   180
 
-#if DEBUG_MODE != 1
 static const int16_t g_servo_angle_map[5] = {
     [SERVO_0]   = SERVO_ANGLE_0,
     [SERVO_45]  = SERVO_ANGLE_45,
@@ -128,7 +127,6 @@ static const int16_t g_servo_angle_map[5] = {
     [SERVO_135] = SERVO_ANGLE_135,
     [SERVO_180] = SERVO_ANGLE_180
 };
-#endif
 
 /* ================= 4. 对象实例化 ================= */
 static gpio_num_t g_light_gpios[LIGHT_COUNT] = {
@@ -225,9 +223,7 @@ static void Device_Refresh_Task(void* arg) {
         }
 
         for (int i = 0; i < SERVO_COUNT; i++) {
-#if DEBUG_MODE != 1
             HW_Servo_Set_Angle(g_servo_channels[i], g_servo_angle_map[g_device_flags.servo[i]]);
-#endif
         }
 
         vTaskDelay(pdMS_TO_TICKS(REFRESH_INTERVAL_MS));

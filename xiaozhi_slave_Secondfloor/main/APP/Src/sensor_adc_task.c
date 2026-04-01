@@ -3,8 +3,9 @@
  * @brief   二楼从机统一传感器任务
  *
  * 职责：
- * - 雨滴传感器检测（ADC）
+ * - 雨滴传感器检测（ADC on GPIO1）
  * - 雨天自动收衣服逻辑触发
+ * - 干燥自动晾衣服逻辑触发
  *
  * 架构原则：
  * - 统一采样周期 500ms
@@ -36,7 +37,7 @@ static volatile rain_status_enum_t g_rain_status = RAIN_STATUS_DRY;
 static void HW_ADC_Init(void) {
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(RAIN_ADC_CHANNEL, RAIN_ADC_ATTEN);
-    ESP_LOGI(TAG, "ADC initialized: Rain=CH2(GPIO3)");
+    ESP_LOGI(TAG, "ADC initialized: Rain=CH0(GPIO1)");
     ESP_LOGI(TAG, "Thresholds: Rain < %dmV (trigger)", RAIN_THRESHOLD_LIGHT);
 #if DEBUG_MODE == 1
     ESP_LOGI(TAG, "DEBUG MODE: 5s interval logging enabled");
@@ -73,8 +74,9 @@ static void Sensor_ADC_Task(void* arg) {
             if (g_rain_status == RAIN_STATUS_RAINING) {
                 g_rain_exceed_count = 0;
                 g_rain_status = RAIN_STATUS_DRY;
-                ESP_LOGI(TAG, "[RAIN] Dry %ld mV > %d mV - clothes stay collected",
+                ESP_LOGI(TAG, "[RAIN] Dry %ld mV > %d mV - extending clothes rack",
                          rain_mv, RAIN_THRESHOLD_LIGHT);
+                g_device_flags.servo[0] = SERVO_180;
             }
         }
 
