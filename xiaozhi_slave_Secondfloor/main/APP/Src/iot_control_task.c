@@ -15,6 +15,7 @@
  * - 标志位由 esp_now_receive.c 更新
  */
 #include "iot_control_task.h"
+#include "sensor_config.h"
 
 #include "esp_log.h"
 #include "driver/gpio.h"
@@ -22,7 +23,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define DEBUG_MODE               0
 #define DEBUG_BTN_GPIO          GPIO_NUM_47
 #define DEBUG_STEP_DEGREES      45
 

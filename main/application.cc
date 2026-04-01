@@ -396,8 +396,8 @@ void Application::CheckAssetsVersion() {
 }
 
 void Application::CheckNewVersion() {
-    ESP_LOGI(TAG, "OTA check disabled - skipping version check");
-    return;
+    //ESP_LOGI(TAG, "OTA check disabled - skipping version check");
+    //return;
 
     const int MAX_RETRY = 10;
     int retry_count = 0;

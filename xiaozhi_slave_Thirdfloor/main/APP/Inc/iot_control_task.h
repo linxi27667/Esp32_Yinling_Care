@@ -44,8 +44,7 @@ typedef enum {
 
 typedef enum {
     RAIN_STATUS_DRY = 0,
-    RAIN_STATUS_LIGHT = 1,
-    RAIN_STATUS_HEAVY = 2
+    RAIN_STATUS_RAINING = 1
 } rain_status_enum_t;
 
 typedef enum {

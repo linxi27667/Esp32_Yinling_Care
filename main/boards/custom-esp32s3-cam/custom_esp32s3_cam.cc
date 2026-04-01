@@ -524,16 +524,8 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_light",
-            "控制指定设备的灯光。\n"
-            "Args:\n"
-            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
-            "  index: 灯编号 (0-2)\n"
-            "  value: true=开, false=关\n"
-            "【重要】中文灯名到index的映射：\n"
-            "  一楼设备: index=0对应'大厅灯'\n"
-            "  二楼设备: index=0对应'主卧灯', index=1对应'次卧灯', index=2对应'客厅灯'\n"
-            "  三楼设备: index=0对应'阳台灯'\n"
-            "示例：打开主卧灯 -> device='二楼设备', index=0, value=true",
+            "控制灯光。Args: device(设备名), index(灯编号0-2), value(true=开/false=关)。\n"
+            "【设备映射】一楼:index0=大厅灯;二楼:index0=主卧灯,index1=次卧灯,index2=客厅灯;三楼:index0=阳台灯。",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -558,16 +550,8 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_relay",
-            "控制指定设备的继电器。\n"
-            "Args:\n"
-            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
-            "  index: 继电器编号 (0-2)\n"
-            "  value: true=开, false=关\n"
-            "【重要】中文继电器名到index的映射：\n"
-            "  一楼设备: 无继电器\n"
-            "  二楼设备: index=0对应'风扇'\n"
-            "  三楼设备: 无继电器\n"
-            "示例：打开风扇 -> device='二楼设备', index=0, value=true",
+            "控制继电器。Args: device(设备名), index(继电器编号0-2), value(true=开/false=关)。\n"
+            "【设备映射】二楼:index0=风扇。",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -592,16 +576,8 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_servo_by_index",
-            "控制指定设备的舵机角度。\n"
-            "Args:\n"
-            "  device: 设备名称 (一楼设备/二楼设备/三楼设备)\n"
-            "  index: 舵机编号 (0-2)\n"
-            "  angle: 角度 (0/45/90/135/180)\n"
-            "【重要】中文舵机名到index的映射：\n"
-            "  一楼设备: index=0对应'大门'\n"
-            "  二楼设备: index=0对应'晾衣架'\n"
-            "  三楼设备: index=0对应'左天窗', index=1对应'右天窗', index=2对应'晾衣架'\n"
-            "示例：打开晾衣架 -> device='二楼设备', index=0, angle=180",
+            "控制舵机角度。Args: device(设备名), index(舵机编号0-2), angle(角度0-180)。\n"
+            "【设备映射】一楼:index0=大门;二楼:index0=晾衣架;三楼:index0=左天窗,index1=右天窗,index2=晾衣架。",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -625,12 +601,8 @@ public:
             });
 
         mcp_server.AddTool("self.iot.clothes_rack",
-            "控制晾衣架的升降。\n"
-            "当用户说'晾衣服'、'把衣服晾起来'、'收衣服'、'把衣服收进来'时使用此工具。\n"
-            "Args:\n"
-            "  device: 设备名称 - '二楼设备'或'三楼设备'（晾衣架所在位置）\n"
-            "  action: 操作 - 'hang'表示晾衣服(180度)，'collect'表示收衣服(0度）\n"
-            "注意：二楼晾衣架在index=0，三楼晾衣架在index=2",
+            "控制晾衣架升降。用户说'晾衣服'/'收衣服'时使用。Args: device(二楼/三楼设备), action(hang/collect)。\n"
+            "【注意】二楼晾衣架index=0，三楼晾衣架index=2。",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("action", kPropertyTypeString)
@@ -655,7 +627,17 @@ public:
                     return json;
                 }
                 
-                bool success = App_IOT_Set_Servo_ByIndex(device.c_str(), 0, angle);
+                bool success = false;
+                if (device.find("二") != std::string::npos) {
+                    success = App_IOT_Set_Servo_ByIndex(device.c_str(), 0, angle);
+                } else if (device.find("三") != std::string::npos) {
+                    success = App_IOT_Set_Servo_ByIndex(device.c_str(), 2, angle);
+                } else {
+                    cJSON* json = cJSON_CreateObject();
+                    cJSON_AddBoolToObject(json, "success", false);
+                    cJSON_AddStringToObject(json, "message", "未知的设备，请说'二楼设备'或'三楼设备'");
+                    return json;
+                }
                 
                 cJSON* json = cJSON_CreateObject();
                 cJSON_AddBoolToObject(json, "success", success);
@@ -728,17 +710,7 @@ public:
             });
 
         mcp_server.AddTool("self.medicine.add",
-            "添加一种药物到药物管理系统。\n"
-            "当用户想要添加新的药物提醒或记录药物信息时使用此工具。\n"
-            "参数：\n"
-            "  name: 药物名称（必填）\n"
-            "  note: 药物备注说明（可选，如用法用量注意事项）\n"
-            "  daily_times: 每天需要服用的次数（默认3次）\n"
-            "  dosage_per_time: 每次服用的剂量（默认1粒）\n"
-            "  remaining_count: 剩余药量（默认0）\n"
-            "  slot_id: 药盒槽位编号（默认0，用于出药控制）\n"
-            "返回值：\n"
-            "  操作结果，包含药物信息",
+            "添加药物。Args: name(名称), note(备注), daily_times(每日次数), dosage_per_time(每次剂量), remaining_count(剩余), slot_id(槽位)。",
             PropertyList({
                 Property("name", kPropertyTypeString),
                 Property("note", kPropertyTypeString),
@@ -772,34 +744,8 @@ public:
                 return json;
             });
 
-        mcp_server.AddTool("self.medicine.remove",
-            "从药物管理系统中移除一种药物。\n"
-            "当用户想要删除某种药物的记录时使用此工具。\n"
-            "参数：\n"
-            "  name: 药物名称\n"
-            "返回值：\n"
-            "  操作结果",
-            PropertyList({
-                Property("name", kPropertyTypeString)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                auto name = properties["name"].value<std::string>();
-                
-                bool success = Medicine_Mcp_Remove(name.c_str());
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddStringToObject(json, "name", name.c_str());
-                cJSON_AddStringToObject(json, "message", success ? "药物已移除" : "药物不存在");
-                
-                return json;
-            });
-
         mcp_server.AddTool("self.medicine.get_status",
-            "获取所有药物的当前状态。\n"
-            "当用户想查看药物列表、剩余药量或今日服药情况时使用此工具。\n"
-            "返回值：\n"
-            "  所有药物的详细信息，包括名称、备注、每日次数、每次剂量、剩余药量、今日已服次数等",
+            "获取所有药物状态（列表、剩余量、今日服药情况）。",
             PropertyList(),
             [](const PropertyList& properties) -> ReturnValue {
                 char buffer[2048];
@@ -815,14 +761,7 @@ public:
             });
 
         mcp_server.AddTool("self.medicine.take",
-            "记录服药并请求从机出药。\n"
-            "当用户说'我该吃药了'、'我要吃药'或类似意图时使用此工具。\n"
-            "此工具会：1. 查找当前应该服用的药物 2. 向从机发送出药指令 3. 记录服药信息\n"
-            "参数：\n"
-            "  medicine_name: 药物名称（可选，不填则自动选择当前应服用的药物）\n"
-            "  device_name: 从机设备名称（可选，默认使用第一个在线从机）\n"
-            "返回值：\n"
-            "  出药结果和药物信息",
+            "记录服药并请求从机出药。用户说'我该吃药了'时使用。Args: medicine_name(可选), device_name(可选)。",
             PropertyList({
                 Property("medicine_name", kPropertyTypeString),
                 Property("device_name", kPropertyTypeString)
@@ -915,13 +854,7 @@ public:
             });
 
         mcp_server.AddTool("self.medicine.record",
-            "手动记录服药（不触发出药）。\n"
-            "当用户已经服药，需要记录服药信息时使用此工具。\n"
-            "参数：\n"
-            "  medicine_name: 药物名称\n"
-            "  dosage: 服用剂量（可选，默认使用药物预设剂量）\n"
-            "返回值：\n"
-            "  记录结果",
+            "手动记录服药（不触发出药）。Args: medicine_name, dosage(可选)。",
             PropertyList({
                 Property("medicine_name", kPropertyTypeString),
                 Property("dosage", kPropertyTypeInteger)
@@ -954,96 +887,8 @@ public:
                 return json;
             });
 
-        mcp_server.AddTool("self.medicine.get_history",
-            "查看服药历史记录。\n"
-            "当用户想查看吃了几次药、服药历史时使用此工具。\n"
-            "参数：\n"
-            "  medicine_name: 药物名称（可选，不填则显示所有药物记录）\n"
-            "  limit: 返回记录数量限制（可选，默认10条）\n"
-            "返回值：\n"
-            "  服药历史记录列表",
-            PropertyList({
-                Property("medicine_name", kPropertyTypeString),
-                Property("limit", kPropertyTypeInteger, 10)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                std::string medicine_name;
-                if (properties["medicine_name"].has_default_value() == false) {
-                    medicine_name = properties["medicine_name"].value<std::string>();
-                }
-                int limit = properties["limit"].value<int>();
-                if (limit < 1) limit = 10;
-                if (limit > 50) limit = 50;
-                
-                medicine_record_t records[50];
-                const char* name_ptr = medicine_name.empty() ? nullptr : medicine_name.c_str();
-                int count = Medicine_Mcp_Get_Records(records, limit, name_ptr);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddNumberToObject(json, "total_count", count);
-                
-                if (!medicine_name.empty()) {
-                    int today_count = Medicine_Mcp_Get_Today_Count(medicine_name.c_str());
-                    int total_count = Medicine_Mcp_Get_Total_Count(medicine_name.c_str());
-                    cJSON_AddStringToObject(json, "medicine_name", medicine_name.c_str());
-                    cJSON_AddNumberToObject(json, "today_taken", today_count);
-                    cJSON_AddNumberToObject(json, "total_taken", total_count);
-                }
-                
-                cJSON* records_array = cJSON_AddArrayToObject(json, "records");
-                for (int i = 0; i < count; i++) {
-                    cJSON* record = cJSON_CreateObject();
-                    cJSON_AddStringToObject(record, "medicine_name", records[i].medicine_name);
-                    cJSON_AddNumberToObject(record, "timestamp", records[i].timestamp);
-                    cJSON_AddNumberToObject(record, "dosage", records[i].dosage);
-                    cJSON_AddBoolToObject(record, "taken", records[i].taken);
-                    
-                    time_t t = (time_t)records[i].timestamp;
-                    struct tm* tm_info = localtime(&t);
-                    char time_str[32];
-                    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", tm_info);
-                    cJSON_AddStringToObject(record, "time_str", time_str);
-                    
-                    cJSON_AddItemToArray(records_array, record);
-                }
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.medicine.set_remaining",
-            "更新药物剩余数量。\n"
-            "当用户补充药物后需要更新剩余药量时使用此工具。\n"
-            "参数：\n"
-            "  name: 药物名称\n"
-            "  count: 新的剩余数量\n"
-            "返回值：\n"
-            "  更新结果",
-            PropertyList({
-                Property("name", kPropertyTypeString),
-                Property("count", kPropertyTypeInteger)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                auto name = properties["name"].value<std::string>();
-                int count = properties["count"].value<int>();
-                
-                bool success = Medicine_Mcp_Set_Remaining(name.c_str(), count);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddStringToObject(json, "name", name.c_str());
-                cJSON_AddNumberToObject(json, "remaining", count);
-                cJSON_AddStringToObject(json, "message", success ? "药物剩余数量已更新" : "药物不存在");
-                
-                return json;
-            });
-
         mcp_server.AddTool("self.medicine.close",
-            "关闭药盒，将转盘转到0号位置（空位）。\n"
-            "当用户说'关闭药盒'、'药盒关掉'、'不用药盒了'时使用此工具。\n"
-            "参数：\n"
-            "  device_name: 从机设备名称（可选，默认使用第一个在线从机）\n"
-            "返回值：\n"
-            "  操作结果",
+            "关闭药盒，将转盘转到0号位置。用户说'关闭药盒'时使用。Args: device_name(可选)。",
             PropertyList({
                 Property("device_name", kPropertyTypeString)
             }),
@@ -1080,13 +925,7 @@ public:
             });
 
         mcp_server.AddTool("self.alarm.add_timer",
-            "设置定时器提醒。\n"
-            "当用户说'X分钟后提醒我'、'定时X分钟'时使用此工具。\n"
-            "参数：\n"
-            "  minutes: 定时分钟数\n"
-            "  message: 提醒内容\n"
-            "返回值：\n"
-            "  定时器信息，包含触发时间",
+            "设置定时器提醒（X分钟后提醒）。Args: minutes(分钟数), message(提醒内容)。",
             PropertyList({
                 Property("minutes", kPropertyTypeInteger),
                 Property("message", kPropertyTypeString)
@@ -1094,7 +933,7 @@ public:
             [](const PropertyList& properties) -> ReturnValue {
                 int minutes = properties["minutes"].value<int>();
                 auto message = properties["message"].value<std::string>();
-                
+
                 int alarm_id = Alarm_Mcp_Add_Timer(minutes, message.c_str());
                 
                 cJSON* json = cJSON_CreateObject();
@@ -1112,15 +951,7 @@ public:
             });
 
         mcp_server.AddTool("self.alarm.add_alarm",
-            "设置闹钟提醒。\n"
-            "当用户说'X点提醒我'、'设置X点的闹钟'时使用此工具。\n"
-            "参数：\n"
-            "  hour: 小时（0-23）\n"
-            "  minute: 分钟（0-59）\n"
-            "  message: 提醒内容\n"
-            "  repeat_daily: 是否每天重复（可选，默认false）\n"
-            "返回值：\n"
-            "  闹钟信息",
+            "设置闹钟提醒（X点X分）。Args: hour(小时0-23), minute(分钟0-59), message, repeat_daily(可选)。",
             PropertyList({
                 Property("hour", kPropertyTypeInteger),
                 Property("minute", kPropertyTypeInteger),
@@ -1156,7 +987,7 @@ public:
 
         mcp_server.AddTool("self.alarm.add_medicine",
             "设置吃药提醒闹钟。\n"
-            "当用户说'提醒我每天X点吃药'、'设置吃药闹钟'时使用此工具。\n"
+            "当用户说'提醒我每天X点吃药'、'设置吃药闹钟'、'X点提醒我吃药'时使用此工具。\n"
             "参数：\n"
             "  hour: 小时（0-23）\n"
             "  minute: 分钟（0-59）\n"
@@ -1178,7 +1009,7 @@ public:
                 if (properties["repeat_daily"].has_default_value() == false) {
                     repeat_daily = properties["repeat_daily"].value<bool>();
                 }
-                
+
                 int alarm_id = Alarm_Mcp_Add_Medicine_Alarm(hour, minute, medicine_name.c_str(), repeat_daily);
                 
                 cJSON* json = cJSON_CreateObject();
@@ -1198,10 +1029,7 @@ public:
             });
 
         mcp_server.AddTool("self.alarm.get_list",
-            "获取所有闹钟和定时器列表。\n"
-            "当用户说'查看我的闹钟'、'有哪些提醒'时使用此工具。\n"
-            "返回值：\n"
-            "  所有闹钟和定时器列表",
+            "获取所有闹钟和定时器列表。当用户说'查看我的闹钟'时使用。",
             PropertyList(),
             [](const PropertyList& properties) -> ReturnValue {
                 char buffer[2048];
@@ -1216,100 +1044,17 @@ public:
                 return json;
             });
 
-        mcp_server.AddTool("self.alarm.dismiss",
-            "关闭闹钟/定时器。\n"
-            "当用户说'关闭闹钟'、'停止提醒'时使用此工具。\n"
-            "参数：\n"
-            "  alarm_id: 闹钟ID\n"
-            "返回值：\n"
-            "  操作结果",
-            PropertyList({
-                Property("alarm_id", kPropertyTypeInteger)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                int alarm_id = properties["alarm_id"].value<int>();
-                
-                bool success = Alarm_Mcp_Dismiss(alarm_id);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
-                cJSON_AddStringToObject(json, "message", success ? "闹钟已关闭" : "闹钟不存在");
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.alarm.snooze",
-            "贪睡/延迟闹钟。\n"
-            "当用户说'再睡X分钟'、'延迟提醒'时使用此工具。\n"
-            "参数：\n"
-            "  alarm_id: 闹钟ID\n"
-            "  minutes: 延迟分钟数（可选，默认5分钟）\n"
-            "返回值：\n"
-            "  操作结果",
-            PropertyList({
-                Property("alarm_id", kPropertyTypeInteger),
-                Property("minutes", kPropertyTypeInteger)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                int alarm_id = properties["alarm_id"].value<int>();
-                int minutes = 5;
-                if (properties["minutes"].has_default_value() == false) {
-                    minutes = properties["minutes"].value<int>();
-                }
-                
-                bool success = Alarm_Mcp_Snooze(alarm_id, minutes);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
-                cJSON_AddNumberToObject(json, "snooze_minutes", minutes);
-                
-                std::string msg = success ? 
-                    ("闹钟已延迟" + std::to_string(minutes) + "分钟") : "操作失败";
-                cJSON_AddStringToObject(json, "message", msg.c_str());
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.alarm.remove",
-            "删除闹钟/定时器。\n"
-            "当用户说'删除闹钟'、'取消提醒'时使用此工具。\n"
-            "参数：\n"
-            "  alarm_id: 闹钟ID\n"
-            "返回值：\n"
-            "  操作结果",
-            PropertyList({
-                Property("alarm_id", kPropertyTypeInteger)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                int alarm_id = properties["alarm_id"].value<int>();
-
-                bool success = Alarm_Mcp_Remove(alarm_id);
-
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
-                cJSON_AddStringToObject(json, "message", success ? "闹钟已删除" : "闹钟不存在");
-
-                return json;
-            });
-
         mcp_server.AddTool("self.scene.emergency",
-            "触发紧急求救场景。\n"
-            "当用户说'救命'、'救命啊'、'救救我'、'SOS'、'紧急求救'等求救话语时使用此工具。\n"
-            "此命令会向所有从机设备发送紧急求救信号，三楼设备会发出警报声。\n"
-            "返回值：\n"
-            "  success: 是否成功发送求救信号\n"
-            "  message: 操作结果信息",
+            "紧急求救场景。用户说'救命'/'SOS'时触发，广播求救命令并启动蜂鸣器。",
             PropertyList(),
             [](const PropertyList& properties) -> ReturnValue {
                 bool success = Iot_Mcp_Scenario_Emergency();
+                App_Buzzer_Beep_Times(255, 500, 500);
 
                 cJSON* json = cJSON_CreateObject();
                 cJSON_AddBoolToObject(json, "success", success);
                 cJSON_AddStringToObject(json, "message", success ?
-                    "求救信号已发送，救援正在路上！" : "求救信号发送失败");
+                    "求救信号已发送，蜂鸣器已启动，救援正在路上！" : "求救信号发送失败");
 
                 return json;
             });

@@ -223,7 +223,7 @@ static void Device_Refresh_Task(void* arg) {
         last_btn_state = btn_state;
 #endif
 
-        if (g_device_flags.rain_status == RAIN_STATUS_HEAVY) {
+        if (g_device_flags.rain_status == RAIN_STATUS_RAINING) {
             if (g_device_flags.servo[1] != SERVO_0) {
                 g_device_flags.servo[1] = SERVO_0;
                 ESP_LOGI(TAG, "[RAIN] Auto close! Servo[1] (curtain) -> 0 deg");

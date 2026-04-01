@@ -36,9 +36,10 @@
 
 #define SMOKE_TRIGGER_COUNT      3
 
+#define FIRE_ALERT_INTERVAL_MS   5000
+
 /* ================= 雨滴传感器阈值 (mV) ================= */
 #define RAIN_THRESHOLD_LIGHT     2640
-#define RAIN_THRESHOLD_HEAVY     1320
 
 #define RAIN_TRIGGER_COUNT       2
 

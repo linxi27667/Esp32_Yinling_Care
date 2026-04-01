@@ -31,6 +31,7 @@
 #include "esp_now_receive.h"
 #include "esp_now_heartbeat.h"
 #include "iot_control_task.h"
+#include "sensor_adc_task.h"
 
 static const char* TAG = "MAIN";
 
@@ -58,6 +59,9 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Initializing Heartbeat...");
     EspNow_Heartbeat_Init();
+
+    ESP_LOGI(TAG, "Initializing Sensor ADC...");
+    Sensor_ADC_Task_Init();
 
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "   IoT Slave Ready!");
