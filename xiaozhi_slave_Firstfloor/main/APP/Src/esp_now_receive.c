@@ -65,7 +65,7 @@ typedef enum {
 
 /* ================= 设备名称定义 ================= */
 #define DEVICE_NAME "一楼设备"
-#define TOTAL_GPIO_COUNT (LIGHT_COUNT + RELAY_COUNT + SERVO_COUNT)
+#define TOTAL_GPIO_COUNT 16
 
 /* ================= 响应发送 ================= */
 static uint8_t Get_Current_Wifi_Channel(void) {
