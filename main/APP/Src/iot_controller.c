@@ -355,12 +355,12 @@ bool App_IOT_Broadcast_Lights_On(void) {
 
 void App_IOT_Get_All_Status(char* buffer, int buffer_size) {
     if (buffer == NULL || buffer_size <= 0) return;
-    
+
     int offset = 0;
-    
-    offset += snprintf(buffer + offset, buffer_size - offset, 
+
+    offset += snprintf(buffer + offset, buffer_size - offset,
                        "{\"local_gpios\":[");
-    
+
     for (int i = 0; i < g_iot_controller.local_gpio_count && offset < buffer_size - 100; i++) {
         if (i > 0) offset += snprintf(buffer + offset, buffer_size - offset, ",");
         offset += snprintf(buffer + offset, buffer_size - offset,
@@ -368,19 +368,25 @@ void App_IOT_Get_All_Status(char* buffer, int buffer_size) {
                           g_iot_controller.local_gpios[i].name,
                           g_iot_controller.local_gpio_states[i]);
     }
-    
-    offset += snprintf(buffer + offset, buffer_size - offset, 
+
+    offset += snprintf(buffer + offset, buffer_size - offset,
                        "],\"remote_devices\":[");
-    
+
     for (int d = 0; d < g_iot_controller.remote_device_count && offset < buffer_size - 100; d++) {
         if (d > 0) offset += snprintf(buffer + offset, buffer_size - offset, ",");
+
+        const char* display_name = g_iot_controller.remote_devices[d].device_name;
+        if (strcmp(display_name, "二楼设备") == 0) {
+            display_name = "二楼";
+        }
+
         offset += snprintf(buffer + offset, buffer_size - offset,
                           "{\"name\":\"%s\",\"online\":%s,\"gpio_count\":%d}",
-                          g_iot_controller.remote_devices[d].device_name,
+                          display_name,
                           g_iot_controller.remote_devices[d].online ? "true" : "false",
                           g_iot_controller.remote_devices[d].gpio_count);
     }
-    
+
     offset += snprintf(buffer + offset, buffer_size - offset, "]}");
 }
 
@@ -397,6 +403,24 @@ bool App_IOT_Scenario_Homecoming(const char* first_floor_device, const char* all
     success = IOT_Broadcast_Lights_On(&g_iot_controller) && success;
     ESP_LOGI(TAG, "[SCENARIO] Homecoming completed: door open, lights on");
     return success;
+}
+
+bool App_IOT_Scenario_LeaveHome(const char* first_floor_device) {
+    ESP_LOGI(TAG, "[SCENARIO] LeaveHome - closing door...");
+    if (first_floor_device == NULL) {
+        return false;
+    }
+    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device);
+    if (device_index < 0) {
+        ESP_LOGW(TAG, "Device '%s' not found", first_floor_device);
+        return false;
+    }
+    if (!IOT_Set_Servo(&g_iot_controller, device_index, 0, 0)) {
+        ESP_LOGW(TAG, "Failed to close door");
+        return false;
+    }
+    ESP_LOGI(TAG, "[SCENARIO] LeaveHome completed: door closed");
+    return true;
 }
 
 bool App_IOT_Scenario_GoodNight(const char* all_floors_device) {

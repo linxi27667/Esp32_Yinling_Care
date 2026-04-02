@@ -72,8 +72,9 @@ static void HW_Servo_Set_Pulse(void *timer, uint32_t channel, uint16_t pulse) {
 
 /* ================= 2. 实例化对象并拼装硬件资源 ================= */
 
-static servo_pwm_t servo1_pwm = { .timer = NULL, .channel = GPIO_NUM_19 };
+static servo_pwm_t servo1_pwm = { .timer = NULL, .channel = GPIO_NUM_18 };
 static servo_pwm_t servo2_pwm = { .timer = NULL, .channel = GPIO_NUM_21 };
+static servo_pwm_t servo3_pwm = { .timer = NULL, .channel = GPIO_NUM_40 };
 
 servo_t My_Servo_1 = {
     .pwm_pin = { &servo1_pwm, 0 },
@@ -87,6 +88,12 @@ servo_t My_Servo_2 = {
     .Set_Pulse = HW_Servo_Set_Pulse
 };
 
+servo_t My_Servo_3 = {
+    .pwm_pin = { &servo3_pwm, 2 },
+    .Init      = HW_Servo_Init,
+    .Set_Pulse = HW_Servo_Set_Pulse
+};
+
 /* ================= 3. 提供给 main.c 的统一切入点 ================= */
 
 void App_Servo_System_Init(void) {
@@ -96,5 +103,8 @@ void App_Servo_System_Init(void) {
     Servo_Init_Device(&My_Servo_2);
     Servo_Set_Angle(&My_Servo_2, 90.0f);
 
-    ESP_LOGI(TAG, "Servo system initialized");
+    Servo_Init_Device(&My_Servo_3);
+    Servo_Set_Angle(&My_Servo_3, 90.0f);
+
+    ESP_LOGI(TAG, "Servo system initialized (3 servos: GPIO18, GPIO21, GPIO40)");
 }

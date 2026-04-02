@@ -82,6 +82,11 @@ bool Iot_Mcp_Scenario_Homecoming(void) {
     return App_IOT_Scenario_Homecoming("一楼设备", "all");
 }
 
+bool Iot_Mcp_Scenario_LeaveHome(void) {
+    ESP_LOGI(TAG, "[MCP] Scenario: LeaveHome - closing door");
+    return App_IOT_Scenario_LeaveHome("一楼设备");
+}
+
 bool Iot_Mcp_Scenario_GoodNight(void) {
     ESP_LOGI(TAG, "[MCP] Scenario: GoodNight - turning off all lights");
     return App_IOT_Scenario_GoodNight("all");

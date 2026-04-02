@@ -45,7 +45,7 @@ typedef enum {
 #define RELAY_2_CHINESE   "二楼空调电源"
 #define RELAY_3_CHINESE   "二楼热水器电源"
 
-#define SERVO_1_CHINESE   "二楼窗户"
+#define SERVO_1_CHINESE   "二楼晾衣架"
 #define SERVO_2_CHINESE   "二楼窗帘"
 #define SERVO_3_CHINESE   "二楼门锁"
 

@@ -25,7 +25,7 @@
 #define ADC_SAMPLE_INTERVAL_MS  500
 
 /* ================= 调试模式 ================= */
-#define DEBUG_MODE               1
+#define DEBUG_MODE               0
 
 /* ================= 雨滴传感器阈值 (mV) ================= */
 #define RAIN_THRESHOLD_LIGHT     2640

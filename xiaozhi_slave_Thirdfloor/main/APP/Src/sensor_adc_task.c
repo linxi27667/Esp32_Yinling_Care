@@ -30,7 +30,7 @@ static const char* TAG = "SENSOR_ADC";
 
 static uint8_t g_smoke_exceed_count = 0;
 static uint8_t g_rain_exceed_count = 0;
-static uint8_t g_last_help_btn = 1;
+static uint8_t g_last_help_btn = 0;
 static uint8_t g_fire_alert_countdown = 0;
 static uint8_t g_help_alert_sent = 0;
 
@@ -38,16 +38,16 @@ static void HW_Help_Button_Init(void) {
     gpio_config_t cfg = {
         .pin_bit_mask = (1ULL << HELP_BUTTON_GPIO),
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
         .intr_type = GPIO_INTR_DISABLE
     };
     gpio_config(&cfg);
-    ESP_LOGI(TAG, "Help button initialized on GPIO%d", HELP_BUTTON_GPIO);
+    ESP_LOGI(TAG, "Help button initialized on GPIO%d (PULLDOWN)", HELP_BUTTON_GPIO);
 }
 
 static uint8_t HW_Help_Button_Is_Pressed(void) {
-    return gpio_get_level(HELP_BUTTON_GPIO) == 0;
+    return gpio_get_level(HELP_BUTTON_GPIO) == 1;
 }
 
 static void HW_ADC_Init(void) {
@@ -127,7 +127,7 @@ static void Sensor_ADC_Task(void* arg) {
             }
         }
 
-        if (g_last_help_btn == 1 && help_btn == 0) {
+        if (g_last_help_btn == 0 && help_btn == 1) {
             g_device_flags.help_status = HELP_STATUS_ACTIVE;
             ESP_LOGI(TAG, "[HELP] Button pressed!");
             if (!g_help_alert_sent) {
@@ -135,7 +135,7 @@ static void Sensor_ADC_Task(void* arg) {
                 g_help_alert_sent = 1;
             }
         }
-        if (help_btn == 1) {
+        if (help_btn == 0) {
             g_help_alert_sent = 0;
         }
         g_last_help_btn = help_btn;

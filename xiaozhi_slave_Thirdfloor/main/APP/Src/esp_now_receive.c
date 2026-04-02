@@ -168,12 +168,12 @@ static void Process_Command(const uint8_t* src_mac, const iot_command_packet_t* 
             if (cmd->gpio_index >= 6 && cmd->gpio_index < 6 + SERVO_COUNT) {
                 uint8_t servo_local_index = cmd->gpio_index - 6;
                 if (servo_local_index < 2) {
-                    if (cmd->value == 0 || cmd->value == 35 || cmd->value == 70) {
-                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : cmd->value == 35 ? 1 : 2);
+                    if (cmd->value == 0 || cmd->value == 25 || cmd->value == 70) {
+                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : cmd->value == 25 ? 1 : 2);
                     }
                 } else {
-                    if (cmd->value == 0 || cmd->value == 35 || cmd->value == 70) {
-                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : cmd->value == 35 ? 1 : 2);
+                    if (cmd->value == 0 || cmd->value == 180) {
+                        g_device_flags.servo[servo_local_index] = (servo_angle_enum_t)(cmd->value == 0 ? 0 : 4);
                     }
                 }
                 ESP_LOGI(TAG, "Servo[%d] (GPIO%d) = %d deg", servo_local_index, cmd->gpio_index, cmd->value);

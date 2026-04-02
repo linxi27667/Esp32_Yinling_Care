@@ -21,6 +21,7 @@ void Iot_Mcp_Discover(void);
 int Iot_Mcp_Wait_For_Response(int timeout_ms);
 bool Iot_Mcp_Set_Servo(const char* device_name, uint8_t angle);
 bool Iot_Mcp_Scenario_Homecoming(void);
+bool Iot_Mcp_Scenario_LeaveHome(void);
 bool Iot_Mcp_Scenario_GoodNight(void);
 bool Iot_Mcp_Scenario_Emergency(void);
 bool Iot_Mcp_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle);

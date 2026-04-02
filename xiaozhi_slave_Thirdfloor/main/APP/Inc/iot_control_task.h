@@ -25,7 +25,7 @@ typedef enum {
 
 typedef enum {
     SERVO_0   = 0,
-    SERVO_35  = 1,
+    SERVO_25  = 1,
     SERVO_70  = 2,
     SERVO_135 = 3,
     SERVO_180 = 4

@@ -46,6 +46,7 @@ bool App_IOT_Broadcast_Lights_On(void);
 void App_IOT_Get_All_Status(char* buffer, int buffer_size);
 
 bool App_IOT_Scenario_Homecoming(const char* first_floor_device, const char* all_floors_device);
+bool App_IOT_Scenario_LeaveHome(const char* first_floor_device);
 bool App_IOT_Scenario_GoodNight(const char* all_floors_device);
 bool App_IOT_Scenario_Emergency(void);
 bool App_IOT_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle);

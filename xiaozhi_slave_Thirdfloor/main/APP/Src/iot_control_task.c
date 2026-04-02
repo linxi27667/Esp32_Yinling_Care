@@ -112,7 +112,7 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 
 /* ================= 3. 舵机角度映射表 ================= */
 #define SERVO_ANGLE_0     0
-#define SERVO_ANGLE_35    35
+#define SERVO_ANGLE_25    25
 #define SERVO_ANGLE_70    70
 #define SERVO_ANGLE_135   135
 #define SERVO_ANGLE_180   180
@@ -122,7 +122,7 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
 #if DEBUG_MODE != 1
 static const int16_t g_servo_angle_map[5] = {
     [SERVO_0]   = SERVO_ANGLE_0,
-    [SERVO_35]  = SERVO_ANGLE_35,
+    [SERVO_25]  = SERVO_ANGLE_25,
     [SERVO_70]  = SERVO_ANGLE_70,
     [SERVO_135] = SERVO_ANGLE_135,
     [SERVO_180] = SERVO_ANGLE_180
@@ -145,7 +145,7 @@ static gpio_num_t g_servo_gpios[SERVO_COUNT] = {
 volatile device_flags_enum_t g_device_flags = {
     .light = {OFF, OFF, OFF},
     .relay = {OFF, OFF, OFF},
-    .servo = {SERVO_0, SERVO_0, SERVO_0},
+    .servo = {SERVO_25, SERVO_25, SERVO_25},
     .fire_status = FIRE_STATUS_NORMAL,
     .rain_status = RAIN_STATUS_DRY,
     .help_status = HELP_STATUS_INACTIVE

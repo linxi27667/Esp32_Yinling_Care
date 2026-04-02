@@ -9,6 +9,7 @@
 
 extern servo_t My_Servo_1;
 extern servo_t My_Servo_2;
+extern servo_t My_Servo_3;
 
 void App_Servo_System_Init(void);
 

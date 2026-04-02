@@ -525,7 +525,7 @@ public:
 
         mcp_server.AddTool("self.iot.set_light",
             "控制灯光。Args: device(设备名), index(灯编号0-2), value(true=开/false=关)。\n"
-            "【设备映射】一楼:index0=大厅灯;二楼:index0=主卧灯,index1=次卧灯,index2=客厅灯;三楼:index0=阳台灯。",
+            "【设备映射】一楼:index0=大厅灯;二楼:index0=主卧灯,index1=客厅灯,index2=厕所灯;三楼:index0=阳台灯。",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -1096,6 +1096,21 @@ public:
                 cJSON_AddBoolToObject(json, "success", success);
                 cJSON_AddStringToObject(json, "message", success ?
                     "晚安！所有灯已关闭，祝您好梦" : "操作失败");
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.scene.leave_home",
+            "离家场景。用户说'我出门了'/'关门'/'离家'时触发，关闭一楼大门。\n"
+            "【注意】此场景会关闭一楼大门舵机（角度设为0度）。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                bool success = Iot_Mcp_Scenario_LeaveHome();
+
+                cJSON* json = cJSON_CreateObject();
+                cJSON_AddBoolToObject(json, "success", success);
+                cJSON_AddStringToObject(json, "message", success ?
+                    "大门已关闭，路上注意安全！" : "操作失败");
 
                 return json;
             });
