@@ -113,14 +113,11 @@ bool Iot_Mcp_Scenario_Ventilate(uint8_t window_angle, bool fan_on) {
     return App_IOT_Scenario_Ventilate("三楼设备", window_angle, fan_on ? 1 : 0);
 }
 
-bool Iot_Mcp_Open_Medicine_Box(const char* device_name, uint8_t box_index) {
-    ESP_LOGI(TAG, "[MCP] Open Medicine Box: device=%s, box=%d",
-             device_name ? device_name : "智能药盒", box_index);
-    return App_IOT_Open_Medicine_Box(device_name, box_index);
+void Iot_Mcp_Get_Sensors_Json(char* buffer, int buffer_size) {
+    App_IOT_Get_Sensors_Json(buffer, buffer_size);
 }
 
-bool Iot_Mcp_Close_Medicine_Box(const char* device_name) {
-    ESP_LOGI(TAG, "[MCP] Close Medicine Box: device=%s",
-             device_name ? device_name : "智能药盒");
-    return App_IOT_Close_Medicine_Box(device_name);
+void Iot_Mcp_Get_Event_Log_Json(char* buffer, int buffer_size) {
+    App_IOT_Get_Event_Log_Json(buffer, buffer_size);
 }
+

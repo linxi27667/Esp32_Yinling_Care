@@ -6,12 +6,12 @@
 
 /* ================= 中文设备名称宏（用于 MCP 意图识别） ================= */
 #define CHINESE_LIGHT_NAMES(n) \
-    "一楼设备:大厅灯; " \
-    "二楼设备:主卧灯/次卧灯/客厅灯; " \
-    "三楼设备:阳台灯"
+    "一楼设备:大厅灯/待定/待定; " \
+    "二楼设备:主卧灯/客厅灯/厕所灯; " \
+    "三楼设备:阳台灯/待定/待定"
 
 #define CHINESE_RELAY_NAMES(n) \
-    "一楼设备:待定; " \
+    "一楼设备:待定/待定/待定; " \
     "二楼设备:风扇/待定/待定; " \
     "三楼设备:待定/待定/待定"
 
@@ -34,8 +34,6 @@ const char* App_IOT_Get_Local_GPIO_Name(int index);
 bool App_IOT_Add_Remote_Device(const char* name, const uint8_t* mac, int gpio_count);
 void App_IOT_Discover_Devices(void);
 bool App_IOT_Set_Servo(const char* device_name, const char* gpio_name, uint8_t angle);
-bool App_IOT_Open_Medicine_Box(const char* device_name, uint8_t box_index);
-bool App_IOT_Close_Medicine_Box(const char* device_name);
 bool App_IOT_Set_Light(const char* device_name, uint8_t light_index, bool on);
 bool App_IOT_Set_Relay(const char* device_name, uint8_t relay_index, bool on);
 bool App_IOT_Set_Servo_ByIndex(const char* device_name, uint8_t servo_index, uint8_t angle);
@@ -52,6 +50,8 @@ bool App_IOT_Scenario_Emergency(void);
 bool App_IOT_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle);
 bool App_IOT_Scenario_Rain_Collect_Clothes(const char* third_floor_device);
 bool App_IOT_Scenario_Ventilate(const char* third_floor_device, uint8_t window_angle, uint8_t fan_on);
+void App_IOT_Get_Sensors_Json(char* buffer, int buffer_size);
+void App_IOT_Get_Event_Log_Json(char* buffer, int buffer_size);
 
 #ifdef __cplusplus
 }

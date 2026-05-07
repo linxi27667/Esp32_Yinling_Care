@@ -21,7 +21,6 @@
 #include "settings.h"
 #include "lvgl_theme.h"
 #include "lvgl_display.h"
-#include "iot_controller.h"
 
 #define TAG "MCP"
 
@@ -130,101 +129,6 @@ void McpServer::AddUserOnlyTools() {
                 app.Reboot();
             });
             return true;
-        });
-
-    AddTool("medicine_box.open",
-        "Open one or more medicine boxes sequentially to dispense medication. For rotary medicine boxes with one exit, boxes are opened one by one.\n"
-        "Args:\n"
-        "  `box_indices`: Comma-separated indices of medicine boxes to open in order (e.g., '1' or '1,2,3' or '1-7'). Supports ranges like '1-7' to open all boxes 1 through 7.\n"
-        "  `device_name`: The name of the remote IOT device that controls the medicine boxes (default: '从机设备').\n"
-        "Return:\n"
-        "  Success or failure message.",
-        PropertyList({
-            Property("box_indices", kPropertyTypeString, "Comma-separated box indices (e.g., '1' or '1,2,3' or '1-7')"),
-            Property("device_name", kPropertyTypeString, "从机设备")
-        }),
-        [](const PropertyList& properties) -> ReturnValue {
-            auto box_indices_str = properties["box_indices"].value<std::string>();
-            auto device_name = properties["device_name"].value<std::string>();
-            ESP_LOGI(TAG, "Opening medicine boxes '%s' on device %s", box_indices_str.c_str(), device_name.c_str());
-
-            std::vector<int> box_list;
-            std::stringstream ss(box_indices_str);
-            std::string token;
-
-            while (std::getline(ss, token, ',')) {
-                token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
-                if (token.find('-') != std::string::npos) {
-                    std::stringstream ts(token);
-                    std::string start_str, end_str;
-                    std::getline(ts, start_str, '-');
-                    std::getline(ts, end_str, '-');
-                    int start = std::stoi(start_str);
-                    int end = std::stoi(end_str);
-                    for (int i = start; i <= end; i++) {
-                        box_list.push_back(i);
-                    }
-                } else {
-                    box_list.push_back(std::stoi(token));
-                }
-            }
-
-            if (box_list.empty()) {
-                return std::string("No valid box indices provided");
-            }
-
-            std::string result_msg;
-            for (size_t i = 0; i < box_list.size(); i++) {
-                int box_index = box_list[i];
-                if (box_index < 1 || box_index > 7) {
-                    result_msg += "Invalid box index " + std::to_string(box_index) + ". ";
-                    continue;
-                }
-                ESP_LOGI(TAG, "Opening medicine box %d (%zu/%zu)", box_index, i + 1, box_list.size());
-                bool success = App_IOT_Open_Medicine_Box(device_name.c_str(), (uint8_t)box_index);
-                if (success) {
-                    result_msg += "Box " + std::to_string(box_index) + " opened. ";
-                } else {
-                    result_msg += "Failed to open box " + std::to_string(box_index) + ". ";
-                }
-                if (i < box_list.size() - 1) {
-                    vTaskDelay(pdMS_TO_TICKS(500));
-                }
-            }
-            return result_msg;
-        });
-
-    AddTool("medicine_box.get_status",
-        "Get the status of all medicine boxes and IOT devices.\n"
-        "Return:\n"
-        "  JSON status of all medicine boxes.",
-        PropertyList(),
-        [](const PropertyList& properties) -> ReturnValue {
-            char status[512];
-            App_IOT_Get_All_Status(status, sizeof(status));
-            return std::string(status);
-        });
-
-    AddTool("medicine_box.close",
-        "Close the medicine box by returning the servo to the home position (135 degrees).\n"
-        "Args:\n"
-        "  `device_name`: The name of the remote IOT device that controls the medicine boxes (default: '从机设备').\n"
-        "Return:\n"
-        "  Success or failure message.",
-        PropertyList({
-            Property("device_name", kPropertyTypeString, "从机设备")
-        }),
-        [](const PropertyList& properties) -> ReturnValue {
-            auto device_name = properties["device_name"].value<std::string>();
-            ESP_LOGI(TAG, "Closing medicine box on device %s", device_name.c_str());
-            bool success = App_IOT_Open_Medicine_Box(device_name.c_str(), 0);
-            if (success) {
-                return std::string("Medicine box closed");
-            } else {
-                char msg[128];
-                snprintf(msg, sizeof(msg), "Failed to close medicine box. Device '%s' may be offline.", device_name.c_str());
-                return std::string(msg);
-            }
         });
 
     // Firmware upgrade

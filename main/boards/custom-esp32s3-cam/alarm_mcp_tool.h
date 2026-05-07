@@ -14,7 +14,6 @@ extern "C" {
 typedef enum {
     ALARM_TYPE_TIMER = 0,       // 定时器（X分钟后触发）
     ALARM_TYPE_ALARM = 1,       // 闹钟（指定时间触发）
-    ALARM_TYPE_MEDICINE = 2,    // 吃药提醒
 } alarm_type_t;
 
 typedef enum {
@@ -31,7 +30,7 @@ typedef struct {
     int64_t trigger_time;       // 触发时间戳（秒）
     int64_t created_time;       // 创建时间戳
     char message[ALARM_MESSAGE_MAX_LEN];
-    char medicine_name[32];     // 关联的药物名称（仅ALARM_TYPE_MEDICINE）
+    char medicine_name[32];     // 保留字段（NVS兼容，不再使用）
     bool repeat_daily;          // 是否每天重复
     bool enabled;
     int snooze_count;           // 贪睡次数
@@ -53,8 +52,6 @@ int Alarm_Mcp_Add_Timer(int minutes, const char* message);
 int Alarm_Mcp_Add_Timer_Seconds(int seconds, const char* message);
 
 int Alarm_Mcp_Add_Alarm(int hour, int minute, const char* message, bool repeat_daily);
-
-int Alarm_Mcp_Add_Medicine_Alarm(int hour, int minute, const char* medicine_name, bool repeat_daily);
 
 bool Alarm_Mcp_Remove(int alarm_id);
 

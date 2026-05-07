@@ -10,7 +10,6 @@
 #include "mcp_server.h"
 #include "yolo_mcp_tool.h"
 #include "iot_mcp_tool.h"
-#include "medicine_mcp_tool.h"
 #include "alarm_mcp_tool.h"
 #include "app_mpu6050.h"
 #include "app_buzzer.h"
@@ -258,13 +257,7 @@ public:
         } else {
             ESP_LOGW(TAG, "IOT controller initialization failed");
         }
-        
-        if (Medicine_Mcp_Init()) {
-            ESP_LOGI(TAG, "Medicine manager initialized");
-        } else {
-            ESP_LOGW(TAG, "Medicine manager initialization failed");
-        }
-        
+
         if (Alarm_Mcp_Init()) {
             ESP_LOGI(TAG, "Alarm manager initialized");
             
@@ -376,6 +369,42 @@ public:
                 return json;
             });
 
+        mcp_server.AddTool("self.iot.get_sensors",
+            "获取所有从机传感器的实时数据。\n"
+            "返回烟雾传感器(mV)、雨滴传感器(mV)、火灾状态、下雨状态、求助按键状态。\n"
+            "二楼从机: 雨滴传感器。三楼从机: 烟雾+雨滴+求助按键。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                char buffer[1024];
+                Iot_Mcp_Get_Sensors_Json(buffer, sizeof(buffer));
+
+                cJSON* json = cJSON_Parse(buffer);
+                if (json == nullptr) {
+                    json = cJSON_CreateObject();
+                    cJSON_AddStringToObject(json, "raw", buffer);
+                }
+
+                return json;
+            });
+
+        mcp_server.AddTool("self.iot.get_history",
+            "获取最近的设备事件历史记录（最多50条）。\n"
+            "包括设备上下线、命令执行、传感器状态变化等事件。\n"
+            "当用户问'最近发生了什么'、'设备有什么变化'时使用。",
+            PropertyList(),
+            [](const PropertyList& properties) -> ReturnValue {
+                char buffer[4096];
+                Iot_Mcp_Get_Event_Log_Json(buffer, sizeof(buffer));
+
+                cJSON* json = cJSON_Parse(buffer);
+                if (json == nullptr) {
+                    json = cJSON_CreateObject();
+                    cJSON_AddStringToObject(json, "raw", buffer);
+                }
+
+                return json;
+            });
+
         mcp_server.AddTool("self.iot.discover",
             "Discover remote ESP32 IoT devices on the network.\n"
             "Sends a broadcast message to find available remote devices.",
@@ -465,67 +494,19 @@ public:
                 return json;
             });
 
-        mcp_server.AddTool("self.iot.set_servo",
-            "控制转盘药盒的舵机转到指定位置。\n"
-            "Args:\n"
-            "  device: 设备名称（默认：智能药盒）\n"
-            "  box_indices: 药盒编号（如 '1' 或 '1,2,3'，0=关闭位置）",
-            PropertyList({
-                Property("device", kPropertyTypeString, "智能药盒"),
-                Property("box_indices", kPropertyTypeString, "Comma-separated box indices (e.g., '1' or '1,2,3' or '1-7')")
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                auto device = properties["device"].value<std::string>();
-                auto box_indices_str = properties["box_indices"].value<std::string>();
-
-                std::vector<int> box_list;
-                std::stringstream ss(box_indices_str);
-                std::string token;
-                while (std::getline(ss, token, ',')) {
-                    token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
-                    if (token.find('-') != std::string::npos) {
-                        std::stringstream ts(token);
-                        std::string start_str, end_str;
-                        std::getline(ts, start_str, '-');
-                        std::getline(ts, end_str, '-');
-                        int start = std::stoi(start_str);
-                        int end = std::stoi(end_str);
-                        for (int i = start; i <= end; i++) {
-                            box_list.push_back(i);
-                        }
-                    } else {
-                        box_list.push_back(std::stoi(token));
-                    }
-                }
-
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddStringToObject(json, "device", device.c_str());
-                cJSON* opened = cJSON_CreateArray();
-                cJSON* failed = cJSON_CreateArray();
-
-                for (size_t i = 0; i < box_list.size(); i++) {
-                    int box_index = box_list[i];
-                    bool success = App_IOT_Open_Medicine_Box(device.c_str(), (uint8_t)box_index);
-                    if (success) {
-                        cJSON_AddItemToArray(opened, cJSON_CreateNumber(box_index));
-                    } else {
-                        cJSON_AddItemToArray(failed, cJSON_CreateNumber(box_index));
-                    }
-                    if (i < box_list.size() - 1) {
-                        vTaskDelay(pdMS_TO_TICKS(500));
-                    }
-                }
-                cJSON_AddItemToObject(json, "opened", opened);
-                cJSON_AddItemToObject(json, "failed", failed);
-                cJSON_AddStringToObject(json, "message", cJSON_GetArraySize(failed) == 0 ?
-                    "所有药盒已打开" : "部分药盒打开失败");
-
-                return json;
-            });
-
         mcp_server.AddTool("self.iot.set_light",
-            "控制灯光。Args: device(设备名), index(灯编号0-2), value(true=开/false=关)。\n"
-            "【设备映射】一楼:index0=大厅灯;二楼:index0=主卧灯,index1=客厅灯,index2=厕所灯;三楼:index0=阳台灯。",
+            "控制指定设备的灯光开关。\n"
+            "Args:\n"
+            "  device: 设备名（一楼设备/二楼设备/三楼设备）\n"
+            "  index: 灯编号(0-2)\n"
+            "  value: true=开/false=关\n"
+            "【设备-灯映射】\n"
+            "  一楼设备: index0=大厅灯\n"
+            "  二楼设备: index0=主卧灯, index1=客厅灯, index2=厕所灯\n"
+            "  三楼设备: index0=阳台灯\n"
+            "【用户说\"打开主卧灯\"→ device=二楼设备, index=0】\n"
+            "【用户说\"打开阳台灯\"→ device=三楼设备, index=0】\n"
+            "【用户说\"打开客厅灯\"→ device=二楼设备, index=1】",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -550,7 +531,11 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_relay",
-            "控制继电器。Args: device(设备名), index(继电器编号0-2), value(true=开/false=关)。\n"
+            "控制继电器开关。\n"
+            "Args:\n"
+            "  device: 设备名（一楼设备/二楼设备/三楼设备）\n"
+            "  index: 继电器编号(0-2)\n"
+            "  value: true=开/false=关\n"
             "【设备映射】二楼:index0=风扇。",
             PropertyList({
                 Property("device", kPropertyTypeString),
@@ -576,8 +561,15 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_servo_by_index",
-            "控制舵机角度。Args: device(设备名), index(舵机编号0-2), angle(角度0-70)。\n"
-            "【设备映射】一楼:index0=大门;二楼:index0=晾衣架;三楼:index0=左天窗,index1=右天窗,index2=晾衣架。",
+            "控制舵机角度。\n"
+            "Args:\n"
+            "  device: 设备名（一楼设备/二楼设备/三楼设备）\n"
+            "  index: 舵机编号(0-2)\n"
+            "  angle: 角度(0-180)\n"
+            "【设备映射】\n"
+            "  一楼设备: index0=大门\n"
+            "  二楼设备: index0=晾衣架\n"
+            "  三楼设备: index0=左天窗, index1=右天窗, index2=晾衣架",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -709,221 +701,6 @@ public:
                 return json;
             });
 
-        mcp_server.AddTool("self.medicine.add",
-            "添加药物。Args: name(名称), note(备注), daily_times(每日次数), dosage_per_time(每次剂量), remaining_count(剩余), slot_id(槽位)。",
-            PropertyList({
-                Property("name", kPropertyTypeString),
-                Property("note", kPropertyTypeString),
-                Property("daily_times", kPropertyTypeInteger, 3),
-                Property("dosage_per_time", kPropertyTypeInteger, 1),
-                Property("remaining_count", kPropertyTypeInteger, 0),
-                Property("slot_id", kPropertyTypeInteger, 0)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                auto name = properties["name"].value<std::string>();
-                auto note = properties["note"].value<std::string>();
-                int daily_times = properties["daily_times"].value<int>();
-                int dosage_per_time = properties["dosage_per_time"].value<int>();
-                int remaining_count = properties["remaining_count"].value<int>();
-                int slot_id = properties["slot_id"].value<int>();
-                
-                int result = Medicine_Mcp_Add(name.c_str(), note.c_str(), 
-                                              daily_times, dosage_per_time, 
-                                              remaining_count, slot_id);
-                
-                cJSON* json = cJSON_CreateObject();
-                if (result >= 0) {
-                    cJSON_AddBoolToObject(json, "success", true);
-                    cJSON_AddStringToObject(json, "name", name.c_str());
-                    cJSON_AddStringToObject(json, "message", "药物添加成功");
-                } else {
-                    cJSON_AddBoolToObject(json, "success", false);
-                    cJSON_AddStringToObject(json, "error", result == -1 ? "药物名称无效" : "药物列表已满");
-                }
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.medicine.get_status",
-            "获取所有药物状态（列表、剩余量、今日服药情况）。",
-            PropertyList(),
-            [](const PropertyList& properties) -> ReturnValue {
-                char buffer[2048];
-                Medicine_Mcp_Get_Status_Json(buffer, sizeof(buffer));
-                
-                cJSON* json = cJSON_Parse(buffer);
-                if (json == nullptr) {
-                    json = cJSON_CreateObject();
-                    cJSON_AddStringToObject(json, "raw", buffer);
-                }
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.medicine.take",
-            "记录服药并请求从机出药。用户说'我该吃药了'时使用。Args: medicine_name(可选), device_name(可选)。",
-            PropertyList({
-                Property("medicine_name", kPropertyTypeString),
-                Property("device_name", kPropertyTypeString)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                std::string medicine_name;
-                std::string device_name;
-                
-                if (properties["medicine_name"].has_default_value() == false) {
-                    medicine_name = properties["medicine_name"].value<std::string>();
-                }
-                if (properties["device_name"].has_default_value() == false) {
-                    device_name = properties["device_name"].value<std::string>();
-                }
-                
-                medicine_info_t* med = nullptr;
-                
-                if (!medicine_name.empty()) {
-                    med = Medicine_Mcp_Get_Info(medicine_name.c_str());
-                } else {
-                    medicine_info_t medicines[MAX_MEDICINE_COUNT];
-                    int count = Medicine_Mcp_Get_All_Medicines(medicines, MAX_MEDICINE_COUNT);
-                    
-                    for (int i = 0; i < count; i++) {
-                        int today_count = Medicine_Mcp_Get_Today_Count(medicines[i].name);
-                        if (today_count < medicines[i].daily_times) {
-                            medicine_manager_t* manager = Medicine_Mcp_Get_Manager();
-                            med = &manager->medicines[i];
-                            medicine_name = med->name;
-                            break;
-                        }
-                    }
-                }
-                
-                if (med == nullptr) {
-                    cJSON* json = cJSON_CreateObject();
-                    cJSON_AddBoolToObject(json, "success", false);
-                    cJSON_AddStringToObject(json, "message", "没有找到需要服用的药物，或者今日药物已全部服用完毕");
-                    return json;
-                }
-                
-                if (med->remaining_count < med->dosage_per_time) {
-                    cJSON* json = cJSON_CreateObject();
-                    cJSON_AddBoolToObject(json, "success", false);
-                    cJSON_AddStringToObject(json, "medicine_name", med->name);
-                    cJSON_AddStringToObject(json, "message", "药物剩余不足，请及时补充");
-                    cJSON_AddNumberToObject(json, "remaining", med->remaining_count);
-                    return json;
-                }
-                
-                const char* target_device = device_name.empty() ? nullptr : device_name.c_str();
-                
-                if (target_device == nullptr) {
-                    int device_count = Iot_Mcp_Get_Remote_Device_Count();
-                    if (device_count > 0) {
-                        target_device = Iot_Mcp_Get_Remote_Device_Name(0);
-                    }
-                }
-                
-                if (target_device == nullptr) {
-                    Medicine_Mcp_Record_Take(med->name, med->dosage_per_time);
-                    cJSON* json = cJSON_CreateObject();
-                    cJSON_AddBoolToObject(json, "success", true);
-                    cJSON_AddStringToObject(json, "medicine_name", med->name);
-                    cJSON_AddStringToObject(json, "note", med->note);
-                    cJSON_AddNumberToObject(json, "dosage", med->dosage_per_time);
-                    cJSON_AddNumberToObject(json, "remaining", med->remaining_count);
-                    cJSON_AddStringToObject(json, "message", "已记录服药，但未找到从机设备，请手动取药");
-                    return json;
-                }
-                
-                bool success = Medicine_Mcp_Request_Dispense(target_device, med->name, med->dosage_per_time);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddStringToObject(json, "medicine_name", med->name);
-                cJSON_AddStringToObject(json, "note", med->note);
-                cJSON_AddNumberToObject(json, "dosage", med->dosage_per_time);
-                cJSON_AddNumberToObject(json, "remaining", med->remaining_count);
-                cJSON_AddStringToObject(json, "device", target_device);
-                cJSON_AddNumberToObject(json, "slot_id", med->slot_id);
-                
-                if (success) {
-                    cJSON_AddStringToObject(json, "message", "出药成功，请取药并按时服用");
-                } else {
-                    cJSON_AddStringToObject(json, "message", "出药指令发送失败，请手动取药");
-                }
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.medicine.record",
-            "手动记录服药（不触发出药）。Args: medicine_name, dosage(可选)。",
-            PropertyList({
-                Property("medicine_name", kPropertyTypeString),
-                Property("dosage", kPropertyTypeInteger)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                auto name = properties["medicine_name"].value<std::string>();
-                
-                medicine_info_t* med = Medicine_Mcp_Get_Info(name.c_str());
-                if (med == nullptr) {
-                    cJSON* json = cJSON_CreateObject();
-                    cJSON_AddBoolToObject(json, "success", false);
-                    cJSON_AddStringToObject(json, "message", "药物不存在");
-                    return json;
-                }
-                
-                int dosage = med->dosage_per_time;
-                if (properties["dosage"].has_default_value() == false) {
-                    dosage = properties["dosage"].value<int>();
-                }
-                
-                bool success = Medicine_Mcp_Record_Take(name.c_str(), dosage);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddStringToObject(json, "medicine_name", name.c_str());
-                cJSON_AddNumberToObject(json, "dosage", dosage);
-                cJSON_AddNumberToObject(json, "remaining", med->remaining_count);
-                cJSON_AddStringToObject(json, "message", success ? "服药记录已保存" : "记录失败");
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.medicine.close",
-            "关闭药盒，将转盘转到0号位置。用户说'关闭药盒'时使用。Args: device_name(可选)。",
-            PropertyList({
-                Property("device_name", kPropertyTypeString)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                std::string device_name;
-                
-                if (properties["device_name"].has_default_value() == false) {
-                    device_name = properties["device_name"].value<std::string>();
-                }
-                
-                const char* target_device = device_name.empty() ? nullptr : device_name.c_str();
-                
-                if (target_device == nullptr) {
-                    int device_count = Iot_Mcp_Get_Remote_Device_Count();
-                    if (device_count > 0) {
-                        target_device = Iot_Mcp_Get_Remote_Device_Name(0);
-                    }
-                }
-                
-                if (target_device == nullptr) {
-                    cJSON* json = cJSON_CreateObject();
-                    cJSON_AddBoolToObject(json, "success", false);
-                    cJSON_AddStringToObject(json, "message", "未找到从机设备");
-                    return json;
-                }
-                
-                bool success = Iot_Mcp_Close_Medicine_Box(target_device);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", success);
-                cJSON_AddStringToObject(json, "message", success ? "药盒已关闭" : "关闭药盒失败");
-                
-                return json;
-            });
-
         mcp_server.AddTool("self.alarm.add_timer",
             "设置定时器提醒（X分钟后提醒）。Args: minutes(分钟数), message(提醒内容)。",
             PropertyList({
@@ -1006,49 +783,6 @@ public:
                     cJSON_AddBoolToObject(json, "repeat_daily", repeat_daily);
                 } else {
                     cJSON_AddStringToObject(json, "error", "闹钟创建失败");
-                }
-                
-                return json;
-            });
-
-        mcp_server.AddTool("self.alarm.add_medicine",
-            "设置吃药提醒闹钟。\n"
-            "当用户说'提醒我每天X点吃药'、'设置吃药闹钟'、'X点提醒我吃药'时使用此工具。\n"
-            "参数：\n"
-            "  hour: 小时（0-23）\n"
-            "  minute: 分钟（0-59）\n"
-            "  medicine_name: 药物名称\n"
-            "  repeat_daily: 是否每天重复（可选，默认true）\n"
-            "返回值：\n"
-            "  吃药提醒信息",
-            PropertyList({
-                Property("hour", kPropertyTypeInteger),
-                Property("minute", kPropertyTypeInteger),
-                Property("medicine_name", kPropertyTypeString),
-                Property("repeat_daily", kPropertyTypeBoolean)
-            }),
-            [](const PropertyList& properties) -> ReturnValue {
-                int hour = properties["hour"].value<int>();
-                int minute = properties["minute"].value<int>();
-                auto medicine_name = properties["medicine_name"].value<std::string>();
-                bool repeat_daily = true;
-                if (properties["repeat_daily"].has_default_value() == false) {
-                    repeat_daily = properties["repeat_daily"].value<bool>();
-                }
-
-                int alarm_id = Alarm_Mcp_Add_Medicine_Alarm(hour, minute, medicine_name.c_str(), repeat_daily);
-                
-                cJSON* json = cJSON_CreateObject();
-                cJSON_AddBoolToObject(json, "success", alarm_id > 0);
-                
-                if (alarm_id > 0) {
-                    cJSON_AddNumberToObject(json, "alarm_id", alarm_id);
-                    cJSON_AddNumberToObject(json, "hour", hour);
-                    cJSON_AddNumberToObject(json, "minute", minute);
-                    cJSON_AddStringToObject(json, "medicine_name", medicine_name.c_str());
-                    cJSON_AddBoolToObject(json, "repeat_daily", repeat_daily);
-                } else {
-                    cJSON_AddStringToObject(json, "error", "吃药提醒创建失败");
                 }
                 
                 return json;

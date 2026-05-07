@@ -1,3 +1,7 @@
+---
+name: FreeRTOS架构专家
+description: FreeRTOS任务架构、优先级分配、栈管理、队列/信号量/任务通知、ESP32双核调度。TRIGGER when: xTaskCreate/Queue/Semaphore或RTOS代码。
+---
 # FreeRTOS 架构专家 Skill
 
 ## 定位

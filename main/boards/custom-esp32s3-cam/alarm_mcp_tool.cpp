@@ -190,39 +190,6 @@ int Alarm_Mcp_Add_Alarm(int hour, int minute, const char* message, bool repeat_d
     return Add_Alarm_Internal(ALARM_TYPE_ALARM, (int64_t)trigger_time, message, NULL, repeat_daily);
 }
 
-int Alarm_Mcp_Add_Medicine_Alarm(int hour, int minute, const char* medicine_name, bool repeat_daily) {
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-        ESP_LOGE(TAG, "Invalid medicine alarm time: %02d:%02d", hour, minute);
-        return -1;
-    }
-
-    if (medicine_name == NULL || strlen(medicine_name) == 0) {
-        ESP_LOGE(TAG, "Invalid medicine name");
-        return -2;
-    }
-
-    time_t now;
-    time(&now);
-    struct tm tm_now_buf;
-    struct tm* tm_now = localtime_r(&now, &tm_now_buf);
-
-    struct tm tm_trigger = *tm_now;
-    tm_trigger.tm_hour = hour;
-    tm_trigger.tm_min = minute;
-    tm_trigger.tm_sec = 0;
-
-    time_t trigger_time = mktime(&tm_trigger);
-
-    if (trigger_time <= now) {
-        trigger_time += 24 * 60 * 60;
-    }
-
-    char message[ALARM_MESSAGE_MAX_LEN];
-    snprintf(message, sizeof(message), "该吃%s了", medicine_name);
-
-    return Add_Alarm_Internal(ALARM_TYPE_MEDICINE, (int64_t)trigger_time, message, medicine_name, repeat_daily);
-}
-
 bool Alarm_Mcp_Remove(int alarm_id) {
     for (int i = 0; i < g_alarm_manager.alarm_count; i++) {
         if (g_alarm_manager.alarms[i].id == alarm_id) {

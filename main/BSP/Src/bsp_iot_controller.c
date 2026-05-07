@@ -4,7 +4,7 @@
  *
  * 职责：
  * - 管理远程设备列表
- * - 处理 ESP-NOW 通信协议
+ * - 处理 MQTT 通信协议
  * - 提供设备查询和控制接口
  */
 #include "bsp_iot_controller.h"
@@ -12,6 +12,7 @@
 #include "esp_timer.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 static const char* TAG = "BSP_IOT";
 
@@ -36,8 +37,9 @@ static const device_name_alias_t g_device_aliases[] = {
     {"三楼", "三楼设备"},
     {"三楼设备", "三楼设备"},
     {"阳台灯", "三楼设备"},
-    {"次卧灯", "客厅灯"},
-    {"客厅灯", "厕所灯"},
+    {"次卧灯", "二楼设备"},
+    {"客厅灯", "二楼设备"},
+    {"厕所灯", "二楼设备"},
     {NULL, NULL}
 };
 
@@ -49,6 +51,14 @@ static const char* IOT_Resolve_Alias(const char* name) {
         }
     }
     return name;
+}
+
+uint8_t IOT_Get_Device_Id_By_Name(const char* name) {
+    if (name == NULL) return 0;
+    if (strstr(name, "一楼") != NULL) return 1;
+    if (strstr(name, "二楼") != NULL) return 2;
+    if (strstr(name, "三楼") != NULL) return 3;
+    return 0;
 }
 
 int IOT_Add_Remote_Device(iot_controller_t* dev, const char* name, const uint8_t* mac, int gpio_count) {
@@ -63,7 +73,8 @@ int IOT_Add_Remote_Device(iot_controller_t* dev, const char* name, const uint8_t
         dev->remote_devices[index].device_name[IOT_DEVICE_NAME_LEN - 1] = '\0';
     }
 
-    dev->remote_devices[index].device_id = index + 1;
+    dev->remote_devices[index].device_id = (name != NULL) ?
+        IOT_Get_Device_Id_By_Name(name) : (index + 1);
 
     if (mac != NULL) {
         memcpy(dev->remote_devices[index].mac_addr, mac, 6);
@@ -191,9 +202,10 @@ bool IOT_Set_Remote_GPIO(iot_controller_t* dev, int device_index, int gpio_index
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        bool result = dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
-                                        (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        char topic[64];
+        snprintf(topic, sizeof(topic), MQTT_TOPIC_CMD_PREFIX "%d", dev->remote_devices[device_index].device_id);
+        bool result = dev->Mqtt_Publish(topic, (const uint8_t*)&cmd, sizeof(cmd));
         if (dev->Log_Info) {
             dev->Log_Info(TAG, "Send to remote %s GPIO%d = %d, result=%d",
                           dev->remote_devices[device_index].device_name, gpio_index, level, result);
@@ -221,9 +233,10 @@ bool IOT_Set_Remote_Servo(iot_controller_t* dev, int device_index, int servo_ind
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        return dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
-                                (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        char topic[64];
+        snprintf(topic, sizeof(topic), MQTT_TOPIC_CMD_PREFIX "%d", dev->remote_devices[device_index].device_id);
+        return dev->Mqtt_Publish(topic, (const uint8_t*)&cmd, sizeof(cmd));
     }
 
     return false;
@@ -272,7 +285,11 @@ void IOT_Process_Remote_Response(iot_controller_t* dev, const uint8_t* mac, cons
                      announce->device_name, announce->gpio_index, len);
             strncpy(dev->remote_devices[found_index].device_name, announce->device_name, IOT_DEVICE_NAME_LEN - 1);
             dev->remote_devices[found_index].device_name[IOT_DEVICE_NAME_LEN - 1] = '\0';
-            dev->remote_devices[found_index].gpio_count = announce->gpio_index > 0 ? announce->gpio_index : 4;
+            uint8_t new_gpio_count = announce->gpio_index > 0 ?
+                (announce->gpio_index > IOT_MAX_REMOTE_GPIOS ? IOT_MAX_REMOTE_GPIOS : announce->gpio_index) : 4;
+            if (new_gpio_count > dev->remote_devices[found_index].gpio_count) {
+                dev->remote_devices[found_index].gpio_count = new_gpio_count;
+            }
             if (dev->Log_Info) {
                 dev->Log_Info(TAG, "Updated device info: %s (MAC: %02X:%02X:%02X:%02X:%02X:%02X, GPIOs: %d)",
                               announce->device_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
@@ -325,9 +342,8 @@ void IOT_Send_Heartbeat(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
     }
 }
 
@@ -342,16 +358,15 @@ void IOT_Discover_Devices(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        bool result = dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        bool result = dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
 
         if (dev->Log_Info) {
             dev->Log_Info(TAG, "Sent discover command (result=%d, size=%d)", result, (int)sizeof(cmd));
         }
     } else {
         if (dev->Log_Error) {
-            dev->Log_Error(TAG, "EspNow_Send not initialized!");
+            dev->Log_Error(TAG, "Mqtt_Publish not initialized!");
         }
     }
 }
@@ -395,9 +410,8 @@ bool IOT_Broadcast_All_Off(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        return dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
     }
     return false;
 }
@@ -413,9 +427,8 @@ bool IOT_Broadcast_All_On(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        return dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
     }
     return false;
 }
@@ -431,9 +444,8 @@ bool IOT_Broadcast_Lights_Off(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        return dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
     }
     return false;
 }
@@ -449,9 +461,8 @@ bool IOT_Broadcast_Lights_On(iot_controller_t* dev) {
         .reserved = {0}
     };
 
-    if (dev->EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        return dev->EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (dev->Mqtt_Publish) {
+        return dev->Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
     }
     return false;
 }
@@ -466,36 +477,12 @@ void IOT_Check_Device_Timeout(iot_controller_t* dev, uint32_t timeout_ms) {
 
         if (current_time_ms - dev->remote_devices[i].last_heartbeat_ms > timeout_ms) {
             dev->remote_devices[i].online = false;
+            IOT_Log_Event(dev, "%s 离线", dev->remote_devices[i].device_name);
             if (dev->Log_Info) {
                 dev->Log_Info(TAG, "Device %s timed out", dev->remote_devices[i].device_name);
             }
         }
     }
-}
-
-bool IOT_Open_Medicine_Box(iot_controller_t* dev, int device_index, uint8_t box_index) {
-    if (dev == NULL || device_index < 0 || device_index >= dev->remote_device_count) {
-        return false;
-    }
-
-    if (box_index > 6) {
-        return false;
-    }
-
-    iot_command_packet_t cmd = {
-        .command = IOT_CMD_OPEN_MEDICINE_BOX,
-        .device_id = dev->remote_devices[device_index].device_id,
-        .gpio_index = box_index,
-        .value = box_index,
-        .reserved = {0}
-    };
-
-    if (dev->EspNow_Send) {
-        return dev->EspNow_Send(dev->remote_devices[device_index].mac_addr,
-                                (const uint8_t*)&cmd, sizeof(cmd));
-    }
-
-    return false;
 }
 
 bool IOT_Set_Servo(iot_controller_t* dev, int device_index, uint8_t servo_index, uint8_t angle) {
@@ -507,4 +494,88 @@ bool IOT_Set_Servo(iot_controller_t* dev, int device_index, uint8_t servo_index,
         return false;
     }
     return IOT_Set_Remote_Servo(dev, device_index, gpio_index, angle);
+}
+
+void IOT_Process_Sensor_Data(iot_controller_t* dev, const uint8_t* mac, const uint8_t* data, int len) {
+    if (dev == NULL || mac == NULL || data == NULL) return;
+    if (len < (int)sizeof(iot_command_packet_t)) return;
+
+    iot_command_packet_t* pkt = (iot_command_packet_t*)data;
+    if (pkt->command != IOT_CMD_SENSOR_REPORT) return;
+
+    int idx = IOT_Find_Device_By_Mac(dev, mac);
+    if (idx < 0) return;
+
+    iot_sensor_state_t* s = &dev->remote_devices[idx].sensors;
+    s->last_update_ms = (uint32_t)(esp_timer_get_time() / 1000);
+    uint16_t value_16 = (uint16_t)pkt->value | ((uint16_t)pkt->reserved[0] << 8);
+
+    switch (pkt->gpio_index) {
+        case IOT_SENSOR_SMOKE_MV:    s->smoke_mv = value_16; break;
+        case IOT_SENSOR_RAIN_MV:     s->rain_mv = value_16; break;
+        case IOT_SENSOR_FIRE_STATUS: s->fire_status = pkt->value; break;
+        case IOT_SENSOR_RAIN_STATUS: s->rain_status = pkt->value; break;
+        case IOT_SENSOR_HELP_STATUS: s->help_status = pkt->value; break;
+    }
+}
+
+void IOT_Get_Sensors_Json(iot_controller_t* dev, char* buffer, int buffer_size) {
+    if (dev == NULL || buffer == NULL || buffer_size <= 0) return;
+
+    int offset = 0;
+    offset += snprintf(buffer + offset, buffer_size - offset, "{\"devices\":[");
+
+    bool first = true;
+    for (int i = 0; i < dev->remote_device_count && offset < buffer_size - 200; i++) {
+        iot_remote_device_t* d = &dev->remote_devices[i];
+        iot_sensor_state_t* s = &d->sensors;
+
+        if (!first) offset += snprintf(buffer + offset, buffer_size - offset, ",");
+        first = false;
+
+        offset += snprintf(buffer + offset, buffer_size - offset,
+            "{\"name\":\"%s\",\"online\":%s,\"smoke_mv\":%d,\"rain_mv\":%d,"
+            "\"fire_status\":%d,\"rain_status\":%d,\"help_status\":%d,\"updated_ms\":%lu}",
+            d->device_name,
+            d->online ? "true" : "false",
+            s->smoke_mv, s->rain_mv,
+            s->fire_status, s->rain_status, s->help_status,
+            (unsigned long)s->last_update_ms);
+    }
+
+    offset += snprintf(buffer + offset, buffer_size - offset, "]}");
+}
+
+void IOT_Log_Event(iot_controller_t* dev, const char* fmt, ...) {
+    if (dev == NULL || fmt == NULL) return;
+
+    char* entry = dev->event_log[dev->event_log_head];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(entry, IOT_EVENT_STR_LEN, fmt, args);
+    va_end(args);
+    entry[IOT_EVENT_STR_LEN - 1] = '\0';
+
+    dev->event_log_head = (dev->event_log_head + 1) % IOT_EVENT_LOG_MAX;
+    if (dev->event_log_count < IOT_EVENT_LOG_MAX) {
+        dev->event_log_count++;
+    }
+}
+
+void IOT_Get_Event_Log_Json(iot_controller_t* dev, char* buffer, int buffer_size) {
+    if (dev == NULL || buffer == NULL || buffer_size <= 0) return;
+
+    int offset = 0;
+    offset += snprintf(buffer + offset, buffer_size - offset, "{\"events\":[");
+
+    int start = dev->event_log_count < IOT_EVENT_LOG_MAX ? 0 :
+                dev->event_log_head;
+    for (int i = 0; i < dev->event_log_count && offset < buffer_size - 100; i++) {
+        int idx = (start + i) % IOT_EVENT_LOG_MAX;
+        if (i > 0) offset += snprintf(buffer + offset, buffer_size - offset, ",");
+        offset += snprintf(buffer + offset, buffer_size - offset,
+                          "{\"idx\":%d,\"msg\":\"%s\"}", i, dev->event_log[idx]);
+    }
+
+    offset += snprintf(buffer + offset, buffer_size - offset, "]}");
 }

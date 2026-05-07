@@ -27,9 +27,8 @@ bool Iot_Mcp_Scenario_Emergency(void);
 bool Iot_Mcp_Control_Servo_Angle(const char* device_name, uint8_t servo_index, uint8_t angle);
 bool Iot_Mcp_Scenario_Rain_Collect_Clothes(void);
 bool Iot_Mcp_Scenario_Ventilate(uint8_t window_angle, bool fan_on);
-bool Iot_Mcp_Open_Medicine_Box(const char* device_name, uint8_t box_index);
-bool Iot_Mcp_Close_Medicine_Box(const char* device_name);
-
+void Iot_Mcp_Get_Sensors_Json(char* buffer, int buffer_size);
+void Iot_Mcp_Get_Event_Log_Json(char* buffer, int buffer_size);
 #ifdef __cplusplus
 }
 #endif

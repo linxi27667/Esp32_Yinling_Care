@@ -763,6 +763,7 @@ if(CONFIG_BOARD_TYPE_CUSTOM_ESP32S3_CAM)
     list(APPEND INCLUDE_DIRS 
         ${CMAKE_CURRENT_SOURCE_DIR}/APP/Inc
         ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
     )
 endif()
 
@@ -940,6 +941,7 @@ idf_component_register(SRCS ${SOURCES}
                         efuse
                         bt
                         fatfs
+                        mqtt
                     )
 
 # Use target_compile_definitions to define BOARD_TYPE, BOARD_NAME

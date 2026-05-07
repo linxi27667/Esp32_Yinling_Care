@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/30817/.trae/extensions/**)",
+      "Read(//c/Users/30817/.trae/**)"
+    ]
+  }
+}

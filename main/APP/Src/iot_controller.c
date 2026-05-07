@@ -3,7 +3,7 @@
 
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "esp_now.h"
+#include "mqtt_client.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
@@ -13,7 +13,13 @@
 
 static const char* TAG = "APP_IOT";
 
+static esp_mqtt_client_handle_t s_mqtt_client = NULL;
+
 static iot_controller_t g_iot_controller;
+
+static void HW_MQTT_Recv_Callback(const char* topic, int topic_len, const char* data, int data_len);
+static bool HW_MQTT_Init(void);
+static bool HW_MQTT_Publish(const char* topic, const uint8_t* data, uint16_t len);
 
 #define LOCAL_GPIO_1_PIN    GPIO_NUM_48
 #define LOCAL_GPIO_2_PIN    GPIO_NUM_46
@@ -43,106 +49,113 @@ static int HW_Gpio_Read(void* port, uint16_t pin) {
     return gpio_get_level((gpio_num_t)pin);
 }
 
-static void HW_EspNow_Recv_Callback(const esp_now_recv_info_t* recv_info, const uint8_t* data, int len) {
-    if (recv_info == NULL || recv_info->src_addr == NULL) return;
+static void HW_MQTT_Recv_Callback(const char* topic, int topic_len, const char* data, int data_len) {
+    ESP_LOGI(TAG, "MQTT received %d bytes on topic: %.*s", data_len, topic_len, topic);
+
+    char topic_buf[128] = {0};
+    if (topic_len > 0 && topic_len < (int)sizeof(topic_buf)) {
+        memcpy(topic_buf, topic, topic_len);
+        topic_buf[topic_len] = '\0';
+    }
+
+    uint8_t src_mac[6] = {0};
+    const char* mac_str = NULL;
     
-    ESP_LOGI(TAG, "ESP-NOW received %d bytes from %02X:%02X:%02X:%02X:%02X:%02X", 
-             len, 
-             recv_info->src_addr[0], recv_info->src_addr[1], recv_info->src_addr[2],
-             recv_info->src_addr[3], recv_info->src_addr[4], recv_info->src_addr[5]);
+    if (strstr(topic_buf, MQTT_TOPIC_HEARTBEAT_PREFIX) != NULL) {
+        mac_str = topic_buf + strlen(MQTT_TOPIC_HEARTBEAT_PREFIX);
+    } else if (strstr(topic_buf, MQTT_TOPIC_RESP_PREFIX) != NULL) {
+        mac_str = topic_buf + strlen(MQTT_TOPIC_RESP_PREFIX);
+    } else if (strstr(topic_buf, MQTT_TOPIC_ANNOUNCE_PREFIX) != NULL) {
+        mac_str = topic_buf + strlen(MQTT_TOPIC_ANNOUNCE_PREFIX);
+    } else if (strstr(topic_buf, MQTT_TOPIC_SENSOR_PREFIX) != NULL) {
+        mac_str = topic_buf + strlen(MQTT_TOPIC_SENSOR_PREFIX);
+    }
     
-    if (len >= sizeof(iot_command_packet_t)) {
+    if (mac_str != NULL && strlen(mac_str) == 12) {
+        for (int i = 0; i < 6; i++) {
+            char hex[3] = {mac_str[i*2], mac_str[i*2+1], '\0'};
+            src_mac[i] = (uint8_t)strtol(hex, NULL, 16);
+        }
+        ESP_LOGD(TAG, "Parsed MAC: %02X:%02X:%02X:%02X:%02X:%02X",
+                 src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5]);
+    }
+    
+    if (data_len >= (int)sizeof(iot_command_packet_t)) {
         iot_command_packet_t* cmd = (iot_command_packet_t*)data;
         if (cmd->command == IOT_CMD_HEARTBEAT) {
-            IOT_Update_Heartbeat(&g_iot_controller, recv_info->src_addr);
+            IOT_Update_Heartbeat(&g_iot_controller, src_mac);
+            return;
+        }
+        if (cmd->command == IOT_CMD_SENSOR_REPORT) {
+            IOT_Process_Sensor_Data(&g_iot_controller, src_mac, (const uint8_t*)data, data_len);
             return;
         }
     }
-    
-    IOT_Process_Remote_Response(&g_iot_controller, recv_info->src_addr, data, len);
+
+    IOT_Process_Remote_Response(&g_iot_controller, src_mac, (const uint8_t*)data, data_len);
 }
 
-static void HW_EspNow_Send_Callback(const esp_now_send_info_t* tx_info, esp_now_send_status_t status) {
-    if (status == ESP_NOW_SEND_SUCCESS) {
-        ESP_LOGI(TAG, "ESP-NOW send success");
-    } else {
-        ESP_LOGE(TAG, "ESP-NOW send failed");
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
+                                int32_t event_id, void *event_data) {
+    esp_mqtt_event_handle_t event = event_data;
+    
+    switch (event->event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "MQTT connected, subscribing...");
+            esp_mqtt_client_subscribe(s_mqtt_client, "xiaozhi/iot/resp/+", 0);
+            esp_mqtt_client_subscribe(s_mqtt_client, "xiaozhi/iot/heartbeat/+", 0);
+            esp_mqtt_client_subscribe(s_mqtt_client, "xiaozhi/iot/announce/+", 1);
+            esp_mqtt_client_subscribe(s_mqtt_client, "xiaozhi/iot/sensor/+", 0);
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGW(TAG, "MQTT disconnected");
+            break;
+        case MQTT_EVENT_DATA:
+            HW_MQTT_Recv_Callback(event->topic, event->topic_len, event->data, event->data_len);
+            break;
+        case MQTT_EVENT_ERROR:
+            ESP_LOGE(TAG, "MQTT error");
+            break;
+        default:
+            break;
     }
 }
 
-static bool HW_EspNow_Init(void) {
-    esp_err_t ret = esp_now_init();
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "ESP-NOW init failed: %s", esp_err_to_name(ret));
+static bool HW_MQTT_Init(void) {
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .broker.address.uri = "mqtt://broker.emqx.io",  // 公网测试 broker
+        .broker.address.port = 1883,
+        .credentials.client_id = "xiaozhi_master_esp32",   // 唯一 ID 避免冲突
+        .session.keepalive = 30,
+        .network.disable_auto_reconnect = false,           // 启用自动重连
+        .network.reconnect_timeout_ms = 5000,              // 5秒重连
+    };
+    
+    s_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+    if (s_mqtt_client == NULL) {
+        ESP_LOGE(TAG, "MQTT init failed");
         return false;
     }
     
-    esp_now_register_recv_cb(HW_EspNow_Recv_Callback);
-    esp_now_register_send_cb(HW_EspNow_Send_Callback);
-    
-    wifi_ap_record_t ap_info;
-    ret = esp_wifi_sta_get_ap_info(&ap_info);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Connected to AP: %s, Channel: %d", ap_info.ssid, ap_info.primary);
-        
-        esp_now_peer_info_t peer = {
-            .channel = ap_info.primary,
-            .ifidx = WIFI_IF_STA,
-            .encrypt = false,
-        };
-        memcpy(peer.peer_addr, (uint8_t[]){0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 6);
-        esp_now_add_peer(&peer);
-        
-        ESP_LOGI(TAG, "ESP-NOW initialized (channel %d)", ap_info.primary);
-    } else {
-        ESP_LOGE(TAG, "Failed to get AP info, using default channel 1");
-        
-        esp_now_peer_info_t peer = {
-            .channel = 1,
-            .ifidx = WIFI_IF_STA,
-            .encrypt = false,
-        };
-        memcpy(peer.peer_addr, (uint8_t[]){0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 6);
-        esp_now_add_peer(&peer);
-        
-        ESP_LOGI(TAG, "ESP-NOW initialized (channel 1)");
+    esp_mqtt_client_register_event(s_mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    esp_err_t ret = esp_mqtt_client_start(s_mqtt_client);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "MQTT start failed: %s", esp_err_to_name(ret));
+        return false;
     }
     
+    ESP_LOGI(TAG, "MQTT initialized");
     return true;
 }
 
-static bool HW_EspNow_Send(const uint8_t* mac, const uint8_t* data, uint16_t len) {
-    uint8_t current_channel = 1;
-    wifi_ap_record_t ap_info;
-    if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
-        current_channel = ap_info.primary;
+static bool HW_MQTT_Publish(const char* topic, const uint8_t* data, uint16_t len) {
+    if (s_mqtt_client == NULL) {
+        ESP_LOGE(TAG, "MQTT client not initialized");
+        return false;
     }
     
-    if (mac[0] != 0xFF || mac[1] != 0xFF || mac[2] != 0xFF || 
-        mac[3] != 0xFF || mac[4] != 0xFF || mac[5] != 0xFF) {
-        
-        if (esp_now_is_peer_exist(mac)) {
-            esp_now_peer_info_t peer = {0};
-            memcpy(peer.peer_addr, mac, 6);
-            peer.channel = current_channel;
-            peer.ifidx = WIFI_IF_STA;
-            peer.encrypt = false;
-            esp_now_mod_peer(&peer);
-        } else {
-            esp_now_peer_info_t peer = {0};
-            memcpy(peer.peer_addr, mac, 6);
-            peer.channel = current_channel;
-            peer.ifidx = WIFI_IF_STA;
-            peer.encrypt = false;
-            esp_err_t err = esp_now_add_peer(&peer);
-            if (err != ESP_OK) {
-                ESP_LOGE(TAG, "Failed to add peer: %s", esp_err_to_name(err));
-            }
-        }
-    }
-    
-    esp_err_t ret = esp_now_send(mac, data, len);
-    return ret == ESP_OK;
+    int msg_id = esp_mqtt_client_publish(s_mqtt_client, topic, (const char*)data, len, 1, 0);
+    return msg_id >= 0;
 }
 
 static void HW_Delay_Ms(uint32_t ms) {
@@ -163,19 +176,6 @@ static void HW_Log_Error(const char* tag, const char* fmt, ...) {
     va_end(args);
 }
 
-static iot_controller_t g_iot_controller = {
-    .local_gpio_count = 0,
-    .remote_device_count = 0,
-    .Gpio_Init = HW_Gpio_Init,
-    .Gpio_Write = HW_Gpio_Write,
-    .Gpio_Read = HW_Gpio_Read,
-    .EspNow_Init = HW_EspNow_Init,
-    .EspNow_Send = HW_EspNow_Send,
-    .Delay_Ms = HW_Delay_Ms,
-    .Log_Info = HW_Log_Info,
-    .Log_Error = HW_Log_Error,
-};
-
 #define DEVICE_TIMEOUT_MS   60000
 
 static void Device_Timeout_Task(void* arg) {
@@ -186,18 +186,28 @@ static void Device_Timeout_Task(void* arg) {
 }
 
 void App_IOT_System_Init(void) {
+    // 设置日志级别为DEBUG，INFO日志将显示为白色（无ANSI颜色）
+    esp_log_level_set(TAG, ESP_LOG_DEBUG);
+    esp_log_level_set("BSP_IOT", ESP_LOG_DEBUG);
+    
     ESP_LOGI(TAG, "Initializing IOT Controller...");
 
-    IOT_Controller_Init(&g_iot_controller);
-    ESP_LOGI(TAG, "IOT Controller initialized - no local GPIOs (all removed)");
+    g_iot_controller.local_gpio_count = 0;
+    g_iot_controller.remote_device_count = 0;
+    g_iot_controller.Gpio_Init = HW_Gpio_Init;
+    g_iot_controller.Gpio_Write = HW_Gpio_Write;
+    g_iot_controller.Gpio_Read = HW_Gpio_Read;
+    g_iot_controller.Mqtt_Init = HW_MQTT_Init;
+    g_iot_controller.Mqtt_Publish = HW_MQTT_Publish;
+    g_iot_controller.Delay_Ms = HW_Delay_Ms;
+    g_iot_controller.Log_Info = HW_Log_Info;
+    g_iot_controller.Log_Error = HW_Log_Error;
 
-    if (g_iot_controller.EspNow_Init) {
-        g_iot_controller.EspNow_Init();
+    if (g_iot_controller.Mqtt_Init) {
+        g_iot_controller.Mqtt_Init();
     }
 
     xTaskCreate(Device_Timeout_Task, "iot_timeout", 2048, NULL, 1, NULL);
-
-    ESP_LOGI(TAG, "IOT Controller initialized with %d local GPIOs", g_iot_controller.local_gpio_count);
 
     vTaskDelay(pdMS_TO_TICKS(1000));
     ESP_LOGI(TAG, "Auto-discovering nearby devices...");
@@ -291,25 +301,6 @@ bool App_IOT_Set_Servo(const char* device_name, const char* gpio_name, uint8_t a
     return false;
 }
 
-bool App_IOT_Open_Medicine_Box(const char* device_name, uint8_t box_index) {
-    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
-    if (device_index < 0) {
-        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
-        return false;
-    }
-
-    return IOT_Open_Medicine_Box(&g_iot_controller, device_index, box_index);
-}
-
-bool App_IOT_Close_Medicine_Box(const char* device_name) {
-    int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
-    if (device_index < 0) {
-        ESP_LOGW(TAG, "Remote device '%s' not found", device_name);
-        return false;
-    }
-    return IOT_Open_Medicine_Box(&g_iot_controller, device_index, 0);
-}
-
 bool App_IOT_Set_Light(const char* device_name, uint8_t light_index, bool on) {
     int device_index = IOT_Find_Device_By_Name(&g_iot_controller, device_name);
     if (device_index < 0) {
@@ -376,8 +367,12 @@ void App_IOT_Get_All_Status(char* buffer, int buffer_size) {
         if (d > 0) offset += snprintf(buffer + offset, buffer_size - offset, ",");
 
         const char* display_name = g_iot_controller.remote_devices[d].device_name;
-        if (strcmp(display_name, "二楼设备") == 0) {
+        if (strcmp(display_name, "一楼设备") == 0) {
+            display_name = "一楼";
+        } else if (strcmp(display_name, "二楼设备") == 0) {
             display_name = "二楼";
+        } else if (strcmp(display_name, "三楼设备") == 0) {
+            display_name = "三楼";
         }
 
         offset += snprintf(buffer + offset, buffer_size - offset,
@@ -394,11 +389,17 @@ bool App_IOT_Scenario_Homecoming(const char* first_floor_device, const char* all
     ESP_LOGI(TAG, "[SCENARIO] Homecoming started...");
     bool success = true;
     if (first_floor_device != NULL) {
-        if (!IOT_Set_Servo(&g_iot_controller, IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device), 0, 180)) {
-            ESP_LOGW(TAG, "Failed to open door");
+        int device_index = IOT_Find_Device_By_Name(&g_iot_controller, first_floor_device);
+        if (device_index >= 0) {
+            if (!IOT_Set_Servo(&g_iot_controller, device_index, 0, 180)) {
+                ESP_LOGW(TAG, "Failed to open door");
+                success = false;
+            }
+            vTaskDelay(pdMS_TO_TICKS(500));
+        } else {
+            ESP_LOGW(TAG, "Device '%s' not found for door control", first_floor_device);
             success = false;
         }
-        vTaskDelay(pdMS_TO_TICKS(500));
     }
     success = IOT_Broadcast_Lights_On(&g_iot_controller) && success;
     ESP_LOGI(TAG, "[SCENARIO] Homecoming completed: door open, lights on");
@@ -437,13 +438,12 @@ bool App_IOT_Scenario_Emergency(void) {
         .value = 1,
         .reserved = {0}
     };
-    if (g_iot_controller.EspNow_Send) {
-        uint8_t broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        bool result = g_iot_controller.EspNow_Send(broadcast_mac, (const uint8_t*)&cmd, sizeof(cmd));
+    if (g_iot_controller.Mqtt_Publish) {
+        bool result = g_iot_controller.Mqtt_Publish(MQTT_TOPIC_CMD_BROADCAST, (const uint8_t*)&cmd, sizeof(cmd));
         ESP_LOGW(TAG, "[EMERGENCY] Emergency broadcast sent, result=%d", result);
         return result;
     }
-    ESP_LOGE(TAG, "[EMERGENCY] EspNow_Send not initialized!");
+    ESP_LOGE(TAG, "[EMERGENCY] Mqtt_Publish not initialized!");
     return false;
 }
 
@@ -483,4 +483,12 @@ bool App_IOT_Scenario_Ventilate(const char* third_floor_device, uint8_t window_a
     IOT_Set_Servo(&g_iot_controller, device_index, 1, window_angle);
     IOT_Set_Relay(&g_iot_controller, device_index, 0, fan_on);
     return true;
+}
+
+void App_IOT_Get_Sensors_Json(char* buffer, int buffer_size) {
+    IOT_Get_Sensors_Json(&g_iot_controller, buffer, buffer_size);
+}
+
+void App_IOT_Get_Event_Log_Json(char* buffer, int buffer_size) {
+    IOT_Get_Event_Log_Json(&g_iot_controller, buffer, buffer_size);
 }
