@@ -8,4 +8,4 @@ idf_component_register(SRCS "iot_slave_main.c"
                             "BSP/Src/bsp_wifi.c"
                             "BSP/Src/bsp_asr_uart.c"
                        PRIV_REQUIRES esp_wifi nvs_flash driver esp_netif esp_event esp_adc mqtt
-                       INCLUDE_DIRS "." "APP/Inc" "BSP/Inc" "../shared")
+                       INCLUDE_DIRS "." "APP/Inc" "BSP/Inc" "../../../shared")

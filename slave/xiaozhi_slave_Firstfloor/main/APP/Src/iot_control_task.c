@@ -6,13 +6,11 @@
  * - 维护设备标志位（枚举类型）
  * - 定时刷新 GPIO 输出
  *
- * 设备配置：3灯 + 3继电器 + 3舵机
+ * 设备配置：1灯(大厅灯, GPIO2) + 1舵机(大门, GPIO18)
  *
  * 架构原则：
  * - 设备状态全部使用枚举类型（易读、易扩展）
  * - 只读取标志位并刷新 GPIO
- * - 不处理任何 ESP-NOW 逻辑
- * - 标志位由 esp_now_receive.c 更新
  */
 #include "iot_control_task.h"
 
@@ -40,7 +38,7 @@ static const char* TAG = "IOT_CTRL";
 #define SERVO_MAX_ANGLE         180
 
 static ledc_channel_t g_servo_channels[SERVO_COUNT] = {
-    LEDC_CHANNEL_0, LEDC_CHANNEL_1, LEDC_CHANNEL_2
+    LEDC_CHANNEL_0
 };
 
 static void HW_Gpio_Init(gpio_num_t gpio) {
@@ -98,18 +96,9 @@ static void HW_Servo_Set_Angle(ledc_channel_t channel, int16_t angle) {
     ledc_update_duty(LEDC_MODE, channel);
 }
 
-/* ================= 2. GPIO 硬件定义 (人工可改) ================= */
-#define LIGHT_GPIO_1     GPIO_NUM_2
-#define LIGHT_GPIO_2     GPIO_NUM_4
-#define LIGHT_GPIO_3     GPIO_NUM_5
-
-#define RELAY_GPIO_1     GPIO_NUM_6
-#define RELAY_GPIO_2     GPIO_NUM_7
-#define RELAY_GPIO_3     GPIO_NUM_15
-
-#define SERVO_GPIO_1     GPIO_NUM_18
-#define SERVO_GPIO_2     GPIO_NUM_21
-#define SERVO_GPIO_3     GPIO_NUM_40
+/* ================= 2. GPIO 硬件定义 ================= */
+#define LIGHT_GPIO_1    GPIO_NUM_2
+#define SERVO_GPIO_1    GPIO_NUM_18
 
 #define REFRESH_INTERVAL_MS     100
 
@@ -132,21 +121,19 @@ static const int16_t g_servo_angle_map[5] = {
 
 /* ================= 4. 对象实例化 ================= */
 static gpio_num_t g_light_gpios[LIGHT_COUNT] = {
-    LIGHT_GPIO_1, LIGHT_GPIO_2, LIGHT_GPIO_3
+    LIGHT_GPIO_1
 };
 
-static gpio_num_t g_relay_gpios[RELAY_COUNT] = {
-    RELAY_GPIO_1, RELAY_GPIO_2, RELAY_GPIO_3
-};
+static gpio_num_t g_relay_gpios[(RELAY_COUNT > 0) ? RELAY_COUNT : 1] = {0};
 
 static gpio_num_t g_servo_gpios[SERVO_COUNT] = {
-    SERVO_GPIO_1, SERVO_GPIO_2, SERVO_GPIO_3
+    SERVO_GPIO_1
 };
 
 volatile device_flags_enum_t g_device_flags = {
-    .light = {OFF, OFF, OFF},
-    .relay = {OFF, OFF, OFF},
-    .servo = {SERVO_0, SERVO_0, SERVO_0}
+    .light = {OFF},
+    .relay = {OFF},
+    .servo = {SERVO_0}
 };
 
 #if DEBUG_MODE == 1
@@ -192,17 +179,12 @@ static void Device_Refresh_Task(void* arg) {
 
     for (int i = 0; i < LIGHT_COUNT; i++) {
         HW_Gpio_Init(g_light_gpios[i]);
-        ESP_LOGI(TAG, "Light[%d] -> GPIO%d", i, g_light_gpios[i]);
-    }
-
-    for (int i = 0; i < RELAY_COUNT; i++) {
-        HW_Gpio_Init(g_relay_gpios[i]);
-        ESP_LOGI(TAG, "Relay[%d] -> GPIO%d", i, g_relay_gpios[i]);
+        ESP_LOGI(TAG, "Light[%d] (大厅灯) -> GPIO%d", i, g_light_gpios[i]);
     }
 
     for (int i = 0; i < SERVO_COUNT; i++) {
         HW_Servo_Init(g_servo_gpios[i], g_servo_channels[i]);
-        ESP_LOGI(TAG, "Servo[%d] -> GPIO%d", i, g_servo_gpios[i]);
+        ESP_LOGI(TAG, "Servo[%d] (大门) -> GPIO%d", i, g_servo_gpios[i]);
     }
 
     static uint8_t last_btn_state = 1;
@@ -248,7 +230,7 @@ void Iot_Control_Task_Init(void) {
     if (ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create device refresh task");
     } else {
-        ESP_LOGI(TAG, "Device control initialized: %d lights, %d relays, %d servos",
-                 LIGHT_COUNT, RELAY_COUNT, SERVO_COUNT);
+        ESP_LOGI(TAG, "Device control initialized: %d lights, %d servos",
+                 LIGHT_COUNT, SERVO_COUNT);
     }
 }

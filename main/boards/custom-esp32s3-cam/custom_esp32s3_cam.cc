@@ -504,9 +504,17 @@ public:
             "  一楼设备: index0=大厅灯\n"
             "  二楼设备: index0=主卧灯, index1=客厅灯, index2=厕所灯\n"
             "  三楼设备: index0=阳台灯\n"
+            "【用户说\"打开大厅灯\"→ device=一楼设备, index=0】\n"
+            "【用户说\"关闭大厅灯\"→ device=一楼设备, index=0, value=false】\n"
+            "【用户说\"打开一楼大厅灯\"→ device=一楼设备, index=0】\n"
             "【用户说\"打开主卧灯\"→ device=二楼设备, index=0】\n"
+            "【用户说\"关闭主卧灯\"→ device=二楼设备, index=0, value=false】\n"
             "【用户说\"打开阳台灯\"→ device=三楼设备, index=0】\n"
-            "【用户说\"打开客厅灯\"→ device=二楼设备, index=1】",
+            "【用户说\"关闭阳台灯\"→ device=三楼设备, index=0, value=false】\n"
+            "【用户说\"打开客厅灯\"→ device=二楼设备, index=1】\n"
+            "【用户说\"关闭客厅灯\"→ device=二楼设备, index=1, value=false】\n"
+            "【用户说\"打开厕所灯\"→ device=二楼设备, index=2】\n"
+            "【用户说\"关闭厕所灯\"→ device=二楼设备, index=2, value=false】",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -531,12 +539,17 @@ public:
             });
 
         mcp_server.AddTool("self.iot.set_relay",
-            "控制继电器开关。\n"
+            "控制继电器开关（风扇、电视、空调等大功率设备）。\n"
             "Args:\n"
             "  device: 设备名（一楼设备/二楼设备/三楼设备）\n"
             "  index: 继电器编号(0-2)\n"
             "  value: true=开/false=关\n"
-            "【设备映射】二楼:index0=风扇。",
+            "【设备-继电器映射】\n"
+            "  一楼设备: index0=待定\n"
+            "  二楼设备: index0=风扇\n"
+            "  三楼设备: index0=待定\n"
+            "【用户说\"打开风扇\"→ device=二楼设备, index=0, value=true】\n"
+            "【用户说\"关闭风扇\"→ device=二楼设备, index=0, value=false】",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -565,11 +578,23 @@ public:
             "Args:\n"
             "  device: 设备名（一楼设备/二楼设备/三楼设备）\n"
             "  index: 舵机编号(0-2)\n"
-            "  angle: 角度(0-180)\n"
-            "【设备映射】\n"
-            "  一楼设备: index0=大门\n"
-            "  二楼设备: index0=晾衣架\n"
-            "  三楼设备: index0=左天窗, index1=右天窗, index2=晾衣架",
+            "  angle: 角度\n"
+            "【设备映射与有效角度】\n"
+            "  一楼设备: index0=大门, 有效角度: 0(关闭)/180(打开)\n"
+            "  二楼设备: index0=晾衣架, 有效角度: 0(收衣服)/180(晾衣服)\n"
+            "  三楼设备: index0=左天窗, 有效角度: 0(关)/25/70/135; index1=右天窗, 有效角度: 0(关)/25/70/135; index2=晾衣架, 有效角度: 0(收衣服)/180(晾衣服)\n"
+            "【用户说\"打开一楼大门\"→ device=一楼设备, index=0, angle=180】\n"
+            "【用户说\"关闭一楼大门\"→ device=一楼设备, index=0, angle=0】\n"
+            "【用户说\"打开天窗\"→ device=三楼设备, index=0, angle=70】\n"
+            "【用户说\"关闭天窗\"→ device=三楼设备, index=0, angle=0】\n"
+            "【用户说\"打开左天窗\"→ device=三楼设备, index=0, angle=70】\n"
+            "【用户说\"打开右天窗\"→ device=三楼设备, index=1, angle=70】\n"
+            "【用户说\"关闭右天窗\"→ device=三楼设备, index=1, angle=0】\n"
+            "【用户说\"天窗开大一点\"→ device=三楼设备, index=0, angle=135】\n"
+            "【用户说\"晾衣服\"→ device=二楼设备, index=0, angle=180】\n"
+            "【用户说\"收衣服\"→ device=二楼设备, index=0, angle=0】\n"
+            "【用户说\"三楼晾衣服\"→ device=三楼设备, index=2, angle=180】\n"
+            "【用户说\"三楼收衣服\"→ device=三楼设备, index=2, angle=0】",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("index", kPropertyTypeInteger),
@@ -594,7 +619,11 @@ public:
 
         mcp_server.AddTool("self.iot.clothes_rack",
             "控制晾衣架升降。用户说'晾衣服'/'收衣服'时使用。Args: device(二楼/三楼设备), action(hang/collect)。\n"
-            "【注意】二楼晾衣架index=0，三楼晾衣架index=2。",
+            "【注意】二楼晾衣架index=0，三楼晾衣架index=2。\n"
+            "【用户说\"晾衣服\"→ device=二楼设备, action=hang】\n"
+            "【用户说\"收衣服\"→ device=二楼设备, action=collect】\n"
+            "【用户说\"三楼晾衣服\"→ device=三楼设备, action=hang】\n"
+            "【用户说\"三楼收衣服\"→ device=三楼设备, action=collect】",
             PropertyList({
                 Property("device", kPropertyTypeString),
                 Property("action", kPropertyTypeString)
@@ -620,9 +649,13 @@ public:
                 }
                 
                 bool success = false;
-                if (device.find("二") != std::string::npos) {
+                if (device.find("二") != std::string::npos || 
+                    device.find("2F") != std::string::npos ||
+                    device == "晾衣架" || device == "二楼晾衣架") {
                     success = App_IOT_Set_Servo_ByIndex(device.c_str(), 0, angle);
-                } else if (device.find("三") != std::string::npos) {
+                } else if (device.find("三") != std::string::npos || 
+                           device.find("3F") != std::string::npos ||
+                           device == "三楼晾衣架") {
                     success = App_IOT_Set_Servo_ByIndex(device.c_str(), 2, angle);
                 } else {
                     cJSON* json = cJSON_CreateObject();

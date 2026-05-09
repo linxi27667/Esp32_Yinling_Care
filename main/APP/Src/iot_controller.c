@@ -123,7 +123,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
 
 static bool HW_MQTT_Init(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .broker.address.uri = "mqtt://broker.emqx.io",  // 公网测试 broker
+        .broker.address.uri = "mqtt://8.134.167.240",  // 自己的服务器
         .broker.address.port = 1883,
         .credentials.client_id = "xiaozhi_master_esp32",   // 唯一 ID 避免冲突
         .session.keepalive = 30,

@@ -209,7 +209,6 @@ static void Device_Refresh_Task(void* arg) {
 
     static uint8_t last_btn_state = 1;
     static uint8_t last_fire_status = FIRE_STATUS_NORMAL;
-    static uint8_t rain_auto_closed = 0;
 
     while (1) {
 #if DEBUG_MODE == 1
@@ -219,16 +218,6 @@ static void Device_Refresh_Task(void* arg) {
         }
         last_btn_state = btn_state;
 #endif
-
-        if (g_device_flags.rain_status == RAIN_STATUS_RAINING) {
-            if (g_device_flags.servo[1] != SERVO_0) {
-                g_device_flags.servo[1] = SERVO_0;
-                ESP_LOGI(TAG, "[RAIN] Auto close! Servo[1] (curtain) -> 0 deg");
-            }
-            rain_auto_closed = 1;
-        } else if (rain_auto_closed && g_device_flags.rain_status == RAIN_STATUS_DRY) {
-            rain_auto_closed = 0;
-        }
 
         if (last_fire_status != g_device_flags.fire_status) {
             last_fire_status = g_device_flags.fire_status;

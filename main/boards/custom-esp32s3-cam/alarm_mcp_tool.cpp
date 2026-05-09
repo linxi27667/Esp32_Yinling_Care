@@ -69,15 +69,22 @@ bool Alarm_Mcp_Init(void) {
         return true;
     }
     
-    ESP_LOGI(TAG, "Initializing Alarm MCP tool...");
+    ESP_LOGI(TAG, "Initializing Alarm MCP tool (clean start)...");
     
     memset(&g_alarm_manager, 0, sizeof(g_alarm_manager));
     g_alarm_manager.next_id = 1;
     
-    Load_Alarms_From_NVS();
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err == ESP_OK) {
+        nvs_erase_all(nvs_handle);
+        nvs_commit(nvs_handle);
+        nvs_close(nvs_handle);
+        ESP_LOGI(TAG, "Cleared previous alarm data from NVS");
+    }
     
     g_initialized = true;
-    ESP_LOGI(TAG, "Alarm MCP tool initialized with %d alarms", g_alarm_manager.alarm_count);
+    ESP_LOGI(TAG, "Alarm MCP tool initialized (0 alarms)");
     
     return true;
 }

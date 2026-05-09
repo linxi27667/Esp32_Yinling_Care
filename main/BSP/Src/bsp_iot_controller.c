@@ -23,23 +23,34 @@ typedef struct {
 
 static const device_name_alias_t g_device_aliases[] = {
     {"一楼大门", "一楼设备"},
+    {"大门", "一楼设备"},
     {"一楼设备", "一楼设备"},
     {"一楼", "一楼设备"},
     {"大厅灯", "一楼设备"},
-    {"二楼设备", "二楼设备"},
-    {"二楼", "二楼设备"},
-    {"主卧", "二楼设备"},
-    {"主卧灯", "二楼设备"},
-    {"次卧", "二楼设备"},
-    {"客厅", "二楼设备"},
-    {"二楼风扇", "二楼设备"},
-    {"风扇", "二楼设备"},
-    {"三楼", "三楼设备"},
-    {"三楼设备", "三楼设备"},
-    {"阳台灯", "三楼设备"},
-    {"次卧灯", "二楼设备"},
-    {"客厅灯", "二楼设备"},
-    {"厕所灯", "二楼设备"},
+    {"1F_Device", "一楼设备"},
+    {"二楼设备", "2F_Device"},
+    {"二楼", "2F_Device"},
+    {"主卧", "2F_Device"},
+    {"主卧灯", "2F_Device"},
+    {"次卧", "2F_Device"},
+    {"次卧灯", "2F_Device"},
+    {"厕所", "2F_Device"},
+    {"厕所灯", "2F_Device"},
+    {"客厅", "2F_Device"},
+    {"客厅灯", "2F_Device"},
+    {"二楼风扇", "2F_Device"},
+    {"风扇", "2F_Device"},
+    {"晾衣架", "2F_Device"},
+    {"二楼晾衣架", "2F_Device"},
+    {"2F_Device", "2F_Device"},
+    {"三楼", "3F_Device"},
+    {"三楼设备", "3F_Device"},
+    {"阳台灯", "3F_Device"},
+    {"天窗", "3F_Device"},
+    {"左天窗", "3F_Device"},
+    {"右天窗", "3F_Device"},
+    {"三楼晾衣架", "3F_Device"},
+    {"3F_Device", "3F_Device"},
     {NULL, NULL}
 };
 
@@ -55,9 +66,9 @@ static const char* IOT_Resolve_Alias(const char* name) {
 
 uint8_t IOT_Get_Device_Id_By_Name(const char* name) {
     if (name == NULL) return 0;
-    if (strstr(name, "一楼") != NULL) return 1;
-    if (strstr(name, "二楼") != NULL) return 2;
-    if (strstr(name, "三楼") != NULL) return 3;
+    if (strstr(name, "一楼") != NULL || strstr(name, "1F") != NULL) return 1;
+    if (strstr(name, "二楼") != NULL || strstr(name, "2F") != NULL) return 2;
+    if (strstr(name, "三楼") != NULL || strstr(name, "3F") != NULL) return 3;
     return 0;
 }
 

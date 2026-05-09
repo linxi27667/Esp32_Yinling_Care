@@ -26,7 +26,8 @@ static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 static char s_mac_str[13] = {0};
 
 /* ================= 设备名称定义 ================= */
-#define DEVICE_NAME "一楼设备"
+#define DEVICE_NAME "一楼设备"  // 与主机别名表匹配
+#define DEVICE_NAME_CN "一楼设备" // 中文显示名（仅用于日志）
 #define TOTAL_GPIO_COUNT 16
 
 /* ================= MQTT配置 ================= */
@@ -61,13 +62,13 @@ static void Send_Announce(void) {
         .device_id = 1,
         .gpio_index = TOTAL_GPIO_COUNT,
         .value = 1,
-        .device_name = DEVICE_NAME
+        .device_name = DEVICE_NAME  // 使用 ASCII 名称
     };
 
     char topic[64];
     snprintf(topic, sizeof(topic), MQTT_TOPIC_ANNOUNCE_PREFIX "%s", s_mac_str);
     esp_mqtt_client_publish(s_mqtt_client, topic, (const char*)&resp, sizeof(resp), 1, 0);
-    ESP_LOGI(TAG, "Announce V2 sent: %s", DEVICE_NAME);
+    ESP_LOGI(TAG, "Announce V2 sent: %s (%s)", DEVICE_NAME, DEVICE_NAME_CN);
 }
 
 /* ================= 命令处理（只更新标志位） ================= */

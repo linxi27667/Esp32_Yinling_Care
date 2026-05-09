@@ -6,23 +6,21 @@
  * - 维护设备标志位（枚举类型）
  * - 定时刷新 GPIO 输出
  *
- * 设备配置：3灯 + 3继电器 + 3舵机
+ * 设备配置：1灯(大厅灯) + 1舵机(大门)
  *
  * 架构原则：
  * - 设备状态全部使用枚举类型（易读、易扩展）
- * - 枚举定义在此处，供 mqtt_receive.c 引用
+ * - 枚举定义在此处，供 mqtt_receive.c 引用能否
  */
 #ifndef IOT_CONTROL_TASK_H
 #define IOT_CONTROL_TASK_H
 
 #include <stdint.h>
 
-/* ================= 全局设备数量配置 ================= */
-#define LIGHT_COUNT    3
-#define RELAY_COUNT    3
-#define SERVO_COUNT    3
+#define LIGHT_COUNT    1
+#define RELAY_COUNT    0
+#define SERVO_COUNT    1
 
-/* ================= 设备状态枚举 ================= */
 typedef enum {
     OFF = 0,
     ON  = 1
@@ -36,23 +34,13 @@ typedef enum {
     SERVO_180 = 4
 } servo_angle_enum_t;
 
-/* ================= 中文设备名称绑定（用于小智意图识别） ================= */
 #define LIGHT_1_CHINESE   "一楼大厅灯"
-#define LIGHT_2_CHINESE   "一楼灯2"
-#define LIGHT_3_CHINESE   "一楼灯3"
-
-#define RELAY_1_CHINESE   "一楼继电器1"
-#define RELAY_2_CHINESE   "一楼继电器2"
-#define RELAY_3_CHINESE   "一楼继电器3"
 
 #define SERVO_1_CHINESE   "一楼大门"
-#define SERVO_2_CHINESE   "一楼舵机2"
-#define SERVO_3_CHINESE   "一楼舵机3"
 
-/* ================= 设备标志位结构体 ================= */
 typedef struct {
     device_onoff_enum_t light[LIGHT_COUNT];
-    device_onoff_enum_t relay[RELAY_COUNT];
+    device_onoff_enum_t relay[(RELAY_COUNT > 0) ? RELAY_COUNT : 1];
     servo_angle_enum_t  servo[SERVO_COUNT];
 } device_flags_enum_t;
 

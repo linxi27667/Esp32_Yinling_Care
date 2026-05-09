@@ -26,7 +26,8 @@ static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 static char s_mac_str[13] = {0};
 
 /* ================= 设备名称定义 ================= */
-#define DEVICE_NAME "二楼设备"
+#define DEVICE_NAME "2F_Device"
+#define DEVICE_NAME_CN "二楼设备"
 #define TOTAL_GPIO_COUNT 16
 
 /* ================= MQTT配置 ================= */
@@ -67,7 +68,7 @@ static void Send_Announce(void) {
     char topic[64];
     snprintf(topic, sizeof(topic), MQTT_TOPIC_ANNOUNCE_PREFIX "%s", s_mac_str);
     esp_mqtt_client_publish(s_mqtt_client, topic, (const char*)&resp, sizeof(resp), 1, 0);
-    ESP_LOGI(TAG, "Announce V2 sent: %s", DEVICE_NAME);
+    ESP_LOGI(TAG, "Announce V2 sent: %s (%s)", DEVICE_NAME, DEVICE_NAME_CN);
 }
 
 /* ================= 命令处理（只更新标志位） ================= */
