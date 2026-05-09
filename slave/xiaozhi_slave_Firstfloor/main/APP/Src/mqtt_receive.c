@@ -26,7 +26,7 @@ static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 static char s_mac_str[13] = {0};
 
 /* ================= 设备名称定义 ================= */
-#define DEVICE_NAME "一楼设备"  // 与主机别名表匹配
+#define DEVICE_NAME "1F_Device"  // ASCII名称（小智需要ASCII）
 #define DEVICE_NAME_CN "一楼设备" // 中文显示名（仅用于日志）
 #define TOTAL_GPIO_COUNT 16
 
