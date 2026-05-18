@@ -3,6 +3,9 @@
 #include "settings.h"
 #include "lvgl_theme.h"
 #include "assets/lang_config.h"
+#if CONFIG_SMART_HOME_PANEL_MODE
+#include "smart_home_ui.h"
+#endif
 
 #include <vector>
 #include <algorithm>
@@ -360,6 +363,11 @@ void LcdDisplay::SetupUI() {
     
     Display::SetupUI();  // Mark SetupUI as called
     DisplayLockGuard lock(this);
+
+#if CONFIG_SMART_HOME_PANEL_MODE
+    smart_home_ui_create();
+    return;
+#endif
 
     auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
     auto text_font = lvgl_theme->text_font()->font();
@@ -810,6 +818,12 @@ void LcdDisplay::SetupUI() {
     
     Display::SetupUI();  // Mark SetupUI as called
     DisplayLockGuard lock(this);
+
+#if CONFIG_SMART_HOME_PANEL_MODE
+    smart_home_ui_create();
+    return;
+#endif
+
     LvglTheme* lvgl_theme = static_cast<LvglTheme*>(current_theme_);
     auto text_font = lvgl_theme->text_font()->font();
     auto icon_font = lvgl_theme->icon_font()->font();

@@ -1,5 +1,14 @@
 menu "Xiaozhi Assistant"
 
+config SMART_HOME_PANEL_MODE
+    bool "ESP32-P4 smart home control panel mode"
+    default y if IDF_TARGET_ESP32P4
+    default n
+    help
+        Start the independent LVGL v9 smart home panel instead of the
+        voice-assistant main loop. The board display, touch and network
+        drivers are still provided by the existing board layer.
+
 config OTA_URL
     string "Default OTA URL"
     default "https://api.tenclass.net/xiaozhi/ota/"

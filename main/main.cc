@@ -7,7 +7,12 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "sdkconfig.h"
+#if CONFIG_SMART_HOME_PANEL_MODE
+#include "smart_home_app.h"
+#else
 #include "application.h"
+#endif
 
 #define TAG "main"
 
@@ -22,8 +27,13 @@ extern "C" void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+#if CONFIG_SMART_HOME_PANEL_MODE
+    ESP_LOGI(TAG, "Starting ESP32-P4 smart home panel mode");
+    smart_home_app_main();
+#else
     // Initialize and run the application
     auto& app = Application::GetInstance();
     app.Initialize();
     app.Run();  // This function runs the main event loop and never returns
+#endif
 }

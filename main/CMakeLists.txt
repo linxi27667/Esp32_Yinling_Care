@@ -41,6 +41,15 @@ set(SOURCES "audio/audio_codec.cc"
 
 set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
 
+if(CONFIG_SMART_HOME_PANEL_MODE)
+    list(APPEND SOURCES
+        "smart_home_panel/smart_home_app.cc"
+        "smart_home_panel/smart_home_mqtt.c"
+        "smart_home_panel/smart_home_ui.c"
+    )
+    list(APPEND INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/smart_home_panel")
+endif()
+
 # Add board common files
 list(APPEND SOURCES
     "boards/common/board.cc"
